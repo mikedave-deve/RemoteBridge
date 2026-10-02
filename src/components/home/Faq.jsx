@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { site } from '../../lib/siteData'
 
 export const faqs = [
   ['Do I have to pay anything to apply?', 'No. PremierRemoteBridge is paid by employers. Job seekers never pay a fee, and no legitimate employer on our board will ask you to pay for training, equipment or a background check.'],
@@ -29,7 +30,7 @@ export default function Faq() {
       <div className="frame grid gap-12 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <h2 className="text-[clamp(38px,4.4vw,56px)] tracking-tightest">Questions we hear most</h2>
-          <p className="mt-5 text-[17px] text-slate">Something else? Email <a href="mailto:hello@premierremotebridge.com" className="text-bridge-600 underline decoration-bridge-200 underline-offset-4 hover:decoration-bridge-500">hello@premierremotebridge.com</a> and a person will reply within one business day.</p>
+          <p className="mt-5 text-[17px] text-slate">Something else? Email <a href={`mailto:${site.contactEmail}`} className="text-bridge-600 underline decoration-bridge-200 underline-offset-4 hover:decoration-bridge-500">{site.contactEmail}</a> and a person will reply within one business day.</p>
         </div>
         <div className="border-t border-line lg:col-span-7 lg:col-start-6">
           {faqs.map(([q, a], i) => (

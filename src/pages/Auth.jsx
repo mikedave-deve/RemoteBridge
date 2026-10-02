@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { signIn } from '../portal/session'
-import { AlertTriangle, ArrowLeft, BadgeCheck, Check, Eye, EyeOff, Lock, ShieldCheck, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BadgeCheck, Check, Clock, Eye, EyeOff, Lock, ShieldCheck, X } from 'lucide-react'
+import { api } from '../lib/api'
 import Logo from '../components/Logo'
 import { gsap, useGSAP } from '../lib/gsap'
 import { enterDelay } from '../components/Transition'
@@ -119,18 +119,25 @@ export function Login() {
     else setErr(`The email or password is incorrect. ${MAX_ATTEMPTS - n} ${MAX_ATTEMPTS - n === 1 ? 'attempt' : 'attempts'} left before a short pause.`)
   }
 
-  const submit = (e) => {
+  const [info, setInfo] = useState('')
+  const [remember, setRemember] = useState(false)
+  const submit = async (e) => {
     e.preventDefault()
-    if (busy || lockedFor) return
-    if (trap) return
-    setErr('')
+    if (busy || lockedFor || trap) return
+    setErr(''); setInfo('')
+    if (!validEmail(email) || !pw) return fail()
     setBusy(true)
-    setTimeout(() => {
-      setBusy(false)
-      if (!validEmail(email) || pw.length < 8) return fail()
-      signIn()
-      nav(state?.next?.startsWith('/portal') ? state.next : '/portal', { replace: true })
-    }, 900)
+    try {
+      const { user } = await api('/auth/login', { method: 'POST', body: { email, password: pw, remember } })
+      const home = user.role === 'admin' ? '/admin' : '/portal'
+      nav(state?.next?.startsWith(home) ? state.next : home, { replace: true })
+    } catch (ex) {
+      setPw('')
+      if (ex.status === 401) fail()
+      else if (ex.status === 429) { setLockedFor(LOCK_SECONDS); setErr(ex.message) }
+      else if (ex.data?.code === 'pending') setInfo(ex.message)
+      else setErr(ex.message)
+    } finally { setBusy(false) }
   }
 
   return (
@@ -148,8 +155,9 @@ export function Login() {
             <Password id="l-pw" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" onCaps={setCaps} />
             <CapsWarning on={caps} />
           </div>
-          <label className="flex items-center gap-3 text-[15px] text-slate"><input type="checkbox" className="h-4 w-4 accent-bridge-600" /> Keep me logged in on this device</label>
+          <label className="flex items-center gap-3 text-[15px] text-slate"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-bridge-600" /> Keep me logged in on this device</label>
           {err && <p role="alert" className="flex gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200"><AlertTriangle size={17} className="mt-0.5 shrink-0" />{err}</p>}
+          {info && <p role="status" className="flex gap-2.5 rounded-xl bg-bridge-50 px-4 py-3 text-[14px] text-bridge-800 ring-1 ring-bridge-100"><Clock size={17} className="mt-0.5 shrink-0" />{info}</p>}
           <button className="btn-dark h-[52px] w-full text-[16px] disabled:cursor-not-allowed disabled:opacity-60" disabled={busy || !!lockedFor}>
             {busy ? <><Spinner /> Verifying…</> : lockedFor ? `Try again in ${lockedFor}s` : <><Lock size={16} /> Log in securely</>}
           </button>
@@ -194,14 +202,20 @@ export function Signup() {
   const show = (k) => touched[k] && errors[k]
   const valid = !Object.values(errors).some(Boolean)
 
-  const submit = (e) => {
+  const [serverErr, setServerErr] = useState('')
+  const submit = async (e) => {
     e.preventDefault()
     if (busy) return
     if (d.trap) return setDone(true)
     setTouched({ first: 1, last: 1, email: 1, phone: 1, pw: 1, confirm: 1, terms: 1 })
     if (!valid) return
-    setBusy(true)
-    setTimeout(() => { setBusy(false); setDone(true) }, 1100)
+    setBusy(true); setServerErr('')
+    try {
+      await api('/auth/register', { method: 'POST', body: { first: d.first, last: d.last, email: d.email.trim(), phone: d.phone, password: d.pw, confirm: d.confirm, website: d.trap } })
+      setDone(true)
+    } catch (ex) {
+      setServerErr(ex.data?.fields ? Object.values(ex.data.fields).join(' ') : ex.message)
+    } finally { setBusy(false) }
   }
 
   const input = (k, props) => (
@@ -211,13 +225,13 @@ export function Signup() {
   const errMsg = (k) => show(k) ? <p id={`s-${k}-err`} className="mt-2 text-[13.5px] text-red-700">{errors[k]}</p> : null
 
   return (
-    <Shell title={done ? 'Check your inbox' : 'Create your account'} image="hallway"
-      sub={done ? `We sent a verification link to ${d.email || 'your email'}. It expires in 24 hours.` : 'Apply in one click, track every application and hear back from a real recruiter.'}
+    <Shell title={done ? 'Your account is waiting for approval' : 'Create your account'} image="hallway"
+      sub={done ? `Thanks, ${d.first || 'there'}. An admin will review your account before you can log in.` : 'Apply in one click, track every application and hear back from a real recruiter.'}
       quote={{ q: 'I set up my profile on a Sunday night. By Friday I had two interviews for remote bookkeeping jobs.', who: 'Marcus Lee, Bookkeeper, hired 2026 · Columbus, OH' }}>
       {done ? (
         <div className="mt-10 rounded-2xl bg-white p-8 ring-1 ring-line">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-bridge-600 text-white"><Check /></span>
-          <p className="mt-5 text-slate">Once you verify your email, you can upload your résumé and start applying. For your security, the link works only once.</p>
+          <p className="mt-5 text-slate">For everyone’s security, a member of our team reviews every new account, usually within one business day. We sent a confirmation to <strong className="font-medium text-ink">{d.email}</strong>, and we will email you again as soon as your account is approved. You can log in after that.</p>
           <Link to="/jobs" className="btn-primary mt-6">Browse jobs while you wait</Link>
         </div>
       ) : (
@@ -264,6 +278,7 @@ export function Signup() {
               </label>
               {errMsg('terms')}
             </div>
+            {serverErr && <p role="alert" className="flex gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200"><AlertTriangle size={17} className="mt-0.5 shrink-0" />{serverErr}</p>}
             <button className="btn-dark h-[52px] w-full text-[16px] disabled:opacity-60" disabled={busy}>
               {busy ? <><Spinner /> Creating your account…</> : <><Lock size={16} /> Create account</>}
             </button>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { HeartHandshake, Mail, Phone, ShieldAlert } from 'lucide-react'
 import { employee } from '../../data/portal'
 import { Card, Notice, PageHead } from '../ui'
+import { site } from '../../lib/siteData'
 
 const faqs = [
   ['When is payday?', 'Every other Friday by direct deposit. If payday falls on a bank holiday, you are paid the business day before.'],
@@ -21,7 +22,7 @@ export default function Help() {
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <Phone size={20} className="text-bridge-700" />
           <p className="mt-3 font-medium">HR and payroll line</p>
-          <p className="text-[14px] text-slate">(404) 555-0170 · Mon–Fri, 8 AM–6 PM ET</p>
+          <p className="text-[14px] text-slate">{site.contactPhone} · Mon–Fri, 8 AM–6 PM ET</p>
         </div>
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <Mail size={20} className="text-bridge-700" />

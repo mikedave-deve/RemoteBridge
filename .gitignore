@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets and local mail previews
+.env
+.env.*
+!.env.example
+server/outbox

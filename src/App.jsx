@@ -19,7 +19,13 @@ const Signup = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Signu
 // Employee portal: its own layout, loaded only when someone signs in.
 const PortalLayout = lazy(() => import('./portal/PortalLayout'))
 const portal = (name) => lazy(() => import(`./portal/pages/${name}.jsx`))
-const P = { Dashboard: portal('Dashboard'), Pay: portal('Pay'), Taxes: portal('Taxes'), Timesheet: portal('Timesheet'), TimeOff: portal('TimeOff'), Benefits: portal('Benefits'), Documents: portal('Documents'), Profile: portal('Profile'), Help: portal('Help') }
+const P = { Dashboard: portal('Dashboard'), Pay: portal('Pay'), Taxes: portal('Taxes'), Timesheet: portal('Timesheet'), TimeOff: portal('TimeOff'), Benefits: portal('Benefits'), Documents: portal('Documents'), Profile: portal('Profile'), Help: portal('Help'),
+  Missions: portal('Missions'), Activity: portal('Activity'), Setup: portal('Setup'), Identity: portal('Identity'), Equipment: portal('Equipment'), Services: portal('Services') }
+
+// Admin portal: loaded only for admins.
+const AdminLayout = lazy(() => import('./admin/AdminLayout'))
+const admin = (name) => lazy(() => import(`./admin/pages/${name}.jsx`))
+const A = { Overview: admin('Overview'), Users: admin('Users'), Inbox: admin('Inbox'), Content: admin('Content') }
 
 // Warm the page chunks once the browser is idle so navigation stays instant.
 const preload = () => Promise.all([import('./pages/Jobs'), import('./pages/JobDetail'), import('./pages/SubmitResume'), import('./pages/About'), import('./pages/Team'), import('./pages/Auth')])
@@ -50,8 +56,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="admin" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><AdminLayout /></Suspense>}>
+          <Route index element={<A.Overview />} />
+          <Route path="users" element={<A.Users />} />
+          <Route path="inbox" element={<A.Inbox />} />
+          <Route path="content" element={<A.Content />} />
+        </Route>
         <Route path="portal" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><PortalLayout /></Suspense>}>
           <Route index element={<P.Dashboard />} />
+          <Route path="missions" element={<P.Missions />} />
+          <Route path="activity" element={<P.Activity />} />
+          <Route path="setup" element={<P.Setup />} />
+          <Route path="identity" element={<P.Identity />} />
+          <Route path="equipment" element={<P.Equipment />} />
+          <Route path="services" element={<P.Services />} />
           <Route path="pay" element={<P.Pay />} />
           <Route path="taxes" element={<P.Taxes />} />
           <Route path="time" element={<P.Timesheet />} />

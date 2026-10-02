@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { photo } from '../data/photos'
+import { site } from '../lib/siteData'
 
 export default function CtaBand() {
   const ref = useRef(null)
@@ -20,7 +21,7 @@ export default function CtaBand() {
       <div data-cta className="frame relative py-32 text-center lg:py-48">
         <p className="kicker-light justify-center before:hidden">Ready when you are</p>
         <h2 className="mx-auto mt-6 max-w-5xl text-balance text-[clamp(42px,6vw,96px)] leading-[1] tracking-tightest text-white">
-          The best job you have had might be the one you do from home.
+          {site.ctaTitle}
         </h2>
         <p className="mx-auto mt-7 max-w-xl text-[18px] text-white/70">
           Browse 100 open remote roles with verified US employers, or send us your résumé and let a recruiter find the right fit.

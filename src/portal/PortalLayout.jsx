@@ -1,23 +1,48 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Bell, CalendarDays, ChevronDown, Clock, FolderOpen, HeartPulse, Landmark, LayoutDashboard,
-  LifeBuoy, LogOut, Menu, ShieldCheck, UserRound, Wallet, X,
+  BadgeCheck, Bell, CalendarDays, ChevronDown, ClipboardCheck, Clock, ConciergeBell, FolderOpen, HeartPulse, History,
+  Landmark, LayoutDashboard, LifeBuoy, LogOut, Menu, Package, ShieldCheck, Target, UserRound, Wallet, X,
 } from 'lucide-react'
 import Logo from '../components/Logo'
 import { announcements, employee, tasks } from '../data/portal'
-import { isSignedIn, signOut } from './session'
+import { signOut, useSession } from './session'
+
+// Show the signed-in person's own details on top of the demo portal data.
+function applyUser(u) {
+  const p = u.profile || {}
+  Object.assign(employee, {
+    first: u.first, last: u.last, preferred: u.first, email: u.email, phone: u.phone || employee.phone,
+    ...(p.title && { title: p.title }), ...(p.client && { client: p.client }), ...(p.department && { department: p.department }),
+    ...(p.manager && { manager: p.manager }), ...(p.employmentType && { type: p.employmentType }), ...(p.startDate && { startDate: p.startDate }),
+    ...(p.workCity && { workCity: p.workCity }), ...(p.workState && { workState: p.workState }),
+  })
+}
 
 const nav = [
-  { to: '/portal', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/portal/pay', label: 'Pay', icon: Wallet },
-  { to: '/portal/taxes', label: 'Tax forms', icon: Landmark },
-  { to: '/portal/time', label: 'Timesheet', icon: Clock },
-  { to: '/portal/time-off', label: 'Time off', icon: CalendarDays },
-  { to: '/portal/benefits', label: 'Benefits', icon: HeartPulse },
-  { to: '/portal/documents', label: 'Documents', icon: FolderOpen },
-  { to: '/portal/profile', label: 'Profile & security', icon: UserRound },
-  { to: '/portal/help', label: 'Help & HR', icon: LifeBuoy },
+  { group: 'Overview', items: [
+    { to: '/portal', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/portal/missions', label: 'Missions & instructions', icon: Target },
+    { to: '/portal/activity', label: 'Activity history', icon: History },
+  ] },
+  { group: 'Pay & time', items: [
+    { to: '/portal/pay', label: 'Pay', icon: Wallet },
+    { to: '/portal/taxes', label: 'Tax forms', icon: Landmark },
+    { to: '/portal/time', label: 'Timesheet', icon: Clock },
+    { to: '/portal/time-off', label: 'Time off', icon: CalendarDays },
+  ] },
+  { group: 'Benefits & services', items: [
+    { to: '/portal/benefits', label: 'Benefits', icon: HeartPulse },
+    { to: '/portal/services', label: 'Company services', icon: ConciergeBell },
+    { to: '/portal/equipment', label: 'Equipment & logistics', icon: Package },
+  ] },
+  { group: 'Account', items: [
+    { to: '/portal/setup', label: 'Information setup', icon: ClipboardCheck },
+    { to: '/portal/identity', label: 'Identity verification', icon: BadgeCheck },
+    { to: '/portal/documents', label: 'Documents', icon: FolderOpen },
+    { to: '/portal/profile', label: 'Profile & security', icon: UserRound },
+    { to: '/portal/help', label: 'Help & HR', icon: LifeBuoy },
+  ] },
 ]
 
 const IDLE_MS = 15 * 60 * 1000
@@ -29,23 +54,26 @@ function Sidebar({ onNavigate }) {
       <div className="flex h-[72px] items-center px-6">
         <Link to="/portal" onClick={onNavigate} aria-label="Employee portal home"><Logo tone="light" size="sm" /></Link>
       </div>
-      <p className="px-6 pb-3 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-white/45">Employee portal</p>
       <nav aria-label="Portal" className="flex-1 overflow-y-auto px-3">
-        <ul className="space-y-0.5">
-          {nav.map(({ to, label, icon: Icon, end }) => (
-            <li key={to}>
-              <NavLink to={to} end={end} onClick={onNavigate}
-                className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${isActive ? 'bg-white/10 font-medium text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}>
-                <Icon size={18} strokeWidth={1.7} />{label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        {nav.map(({ group, items }) => (
+          <div key={group} className="mb-4">
+            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">{group}</p>
+            <ul className="space-y-0.5">
+              {items.map(({ to, label, icon: Icon, end }) => (
+                <li key={to}>
+                  <NavLink to={to} end={end} onClick={onNavigate}
+                    className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2 text-[14.5px] transition-colors ${isActive ? 'bg-white/10 font-medium text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}>
+                    <Icon size={17} strokeWidth={1.7} />{label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
-      <div className="m-3 rounded-xl bg-white/5 p-4 text-[13px] text-white/70 ring-1 ring-white/10">
-        <p className="flex items-center gap-2 font-medium text-white"><ShieldCheck size={15} /> Secure session</p>
-        <p className="mt-1">You will be signed out after 15 minutes of inactivity.</p>
-      </div>
+      <p className="flex items-center gap-2 border-t border-white/10 px-6 py-3.5 text-[12.5px] text-white/55">
+        <ShieldCheck size={14} className="shrink-0" /> Secure session · auto sign-out after 15 min idle
+      </p>
     </div>
   )
 }
@@ -59,8 +87,9 @@ export default function PortalLayout() {
   const [warn, setWarn] = useState(0)
   const timers = useRef({})
 
-  const leave = useCallback((reason) => {
-    signOut()
+  const session = useSession()
+  const leave = useCallback(async (reason) => {
+    await signOut()
     navigate('/login', { replace: true, state: { reason } })
   }, [navigate])
 
@@ -88,7 +117,9 @@ export default function PortalLayout() {
 
   useEffect(() => { setDrawer(false); setMenu(false); setBell(false); window.scrollTo(0, 0) }, [pathname])
 
-  if (!isSignedIn()) return <Navigate to="/login" replace state={{ next: pathname }} />
+  if (session.loading) return <div className="grid min-h-screen place-items-center bg-paper"><span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-bridge-600" aria-label="Loading" /></div>
+  if (!session.user) return <Navigate to="/login" replace state={{ next: pathname }} />
+  applyUser(session.user)
 
   return (
     <div className="min-h-screen bg-paper">

@@ -6,6 +6,7 @@ import CtaBand from '../components/CtaBand'
 import useReveal from '../lib/useReveal'
 import { gsap, useGSAP } from '../lib/gsap'
 import { photo } from '../data/photos'
+import { api } from '../lib/api'
 
 const history = [
   ['2018', 'Founded in Atlanta', 'Daniel Brooks and William Parker place their first 14 remote customer support reps with a regional insurer, running payroll from a spreadsheet.'],
@@ -24,6 +25,17 @@ const services = [
 
 function Contact() {
   const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const submit = async (e) => {
+    e.preventDefault()
+    if (busy) return
+    const f = Object.fromEntries(new FormData(e.currentTarget))
+    setBusy(true); setErr('')
+    try { await api('/contact', { method: 'POST', body: f }); setSent(true) }
+    catch (ex) { setErr(ex.data?.fields ? Object.values(ex.data.fields).join(' ') : ex.message) }
+    finally { setBusy(false) }
+  }
   return (
     <section id="contact" className="scroll-mt-24 bg-white py-28 lg:py-36">
       <div className="frame grid gap-14 lg:grid-cols-12">
@@ -43,16 +55,18 @@ function Contact() {
                 <p className="mt-6 font-display text-[32px]">Message sent</p><p className="mt-2 text-slate">A partner will reply within one business day.</p></div>
             </div>
           ) : (
-            <form onSubmit={(e) => { e.preventDefault(); setSent(true) }} className="grid gap-5 rounded-[28px] bg-mist p-6 sm:grid-cols-2 sm:p-10">
-              <div><label className="field-label" htmlFor="c-name">Your name</label><input id="c-name" required autoComplete="name" className="field" /></div>
-              <div><label className="field-label" htmlFor="c-co">Company</label><input id="c-co" required autoComplete="organization" className="field" /></div>
-              <div className="sm:col-span-2"><label className="field-label" htmlFor="c-mail">Work email</label><input id="c-mail" type="email" required autoComplete="email" className="field" /></div>
+            <form onSubmit={submit} className="relative grid gap-5 rounded-[28px] bg-mist p-6 sm:grid-cols-2 sm:p-10">
+              <div><label className="field-label" htmlFor="c-name">Your name</label><input id="c-name" name="name" required maxLength={80} autoComplete="name" className="field" /></div>
+              <div><label className="field-label" htmlFor="c-co">Company</label><input id="c-co" name="company" required maxLength={120} autoComplete="organization" className="field" /></div>
+              <div className="sm:col-span-2"><label className="field-label" htmlFor="c-mail">Work email</label><input id="c-mail" name="email" type="email" required maxLength={120} autoComplete="email" className="field" /></div>
               <div><label className="field-label" htmlFor="c-need">What do you need?</label>
-                <select id="c-need" className="field"><option>Remote recruiting</option><option>Multi-state payroll</option><option>Onboarding & compliance</option><option>All three</option></select></div>
+                <select id="c-need" name="need" className="field"><option>Remote recruiting</option><option>Multi-state payroll</option><option>Onboarding & compliance</option><option>All three</option></select></div>
               <div><label className="field-label" htmlFor="c-n">Roles to fill</label>
-                <select id="c-n" className="field"><option>1</option><option>2–5</option><option>6–20</option><option>20+</option></select></div>
-              <div className="sm:col-span-2"><label className="field-label" htmlFor="c-msg">About the role</label><textarea id="c-msg" rows={4} className="field-area" placeholder="Job title, schedule, time zone, pay range, start date" /></div>
-              <button className="btn-primary sm:col-span-2">Send message</button>
+                <select id="c-n" name="roles" className="field"><option>1</option><option>2–5</option><option>6–20</option><option>20+</option></select></div>
+              <div className="sm:col-span-2"><label className="field-label" htmlFor="c-msg">About the role</label><textarea id="c-msg" name="message" rows={4} maxLength={3000} className="field-area" placeholder="Job title, schedule, time zone, pay range, start date" /></div>
+              <div className="absolute -left-[9999px]" aria-hidden="true"><label htmlFor="c-web">Website</label><input id="c-web" name="website" tabIndex={-1} autoComplete="off" /></div>
+              {err && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200 sm:col-span-2">{err}</p>}
+              <button className="btn-primary sm:col-span-2 disabled:opacity-60" disabled={busy}>{busy ? 'Sending…' : 'Send message'}</button>
             </form>
           )}
         </div>

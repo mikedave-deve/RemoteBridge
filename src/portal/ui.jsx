@@ -52,8 +52,8 @@ export function Badge({ tone = 'gray', children }) {
 }
 
 /** Map a status word to a badge tone, so state is always text plus color. */
-export const statusTone = (s) => /approved|complete|verified|on file|signed|acknowledged|paid|active|taken/i.test(s) ? 'green'
-  : /pending|progress|open|scheduled/i.test(s) ? 'amber' : /required|denied|overdue|not started/i.test(s) ? 'red' : 'gray'
+export const statusTone = (s) => /approved|complete|verified|on file|signed|acknowledged|paid|active|taken|clear|resolved|delivered|in use|authorized/i.test(s) ? 'green'
+  : /pending|progress|open|scheduled|review|transit/i.test(s) ? 'amber' : /required|denied|overdue|not started/i.test(s) ? 'red' : 'gray'
 
 export function Table({ head, rows, align = [] }) {
   return (

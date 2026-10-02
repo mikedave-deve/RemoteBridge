@@ -6,6 +6,7 @@ import { departments, getJob } from '../data/jobs'
 import { photo } from '../data/photos'
 import { gsap, useGSAP } from '../lib/gsap'
 import { formatPhone, validEmail, validPhone } from '../lib/validate'
+import { api } from '../lib/api'
 
 const experience = ['Entry level (less than 1 year)', '1–2 years', '3–5 years', '6–10 years', 'More than 10 years']
 const MAX = 8 * 1024 * 1024
@@ -63,13 +64,22 @@ export default function SubmitResume() {
     return !Object.keys(e).length
   }
 
-  const submit = (ev) => {
+  const submit = async (ev) => {
     ev.preventDefault()
     if (sending) return
     if (data.website) return setDone(true) // bot filled the hidden field: pretend success, send nothing
     if (!validate()) return
     setSending(true)
-    setTimeout(() => { setSending(false); setDone(true) }, 1200)
+    const form = new FormData()
+    for (const [k, v] of Object.entries(data)) form.append(k, String(v))
+    if (role) form.append('role', `${role.title} at ${role.company}`)
+    form.append('resume', file)
+    try {
+      await api('/resume', { method: 'POST', form })
+      setDone(true)
+    } catch (ex) {
+      setErrors({ ...(ex.data?.fields || {}), form: ex.message })
+    } finally { setSending(false) }
   }
 
   const pick = async (f) => {
@@ -161,6 +171,7 @@ export default function SubmitResume() {
                       {errors.consent && <p id="consent-err" className="mt-2 text-[14px] text-red-700">{errors.consent}</p>}
                     </div>
                   </div>
+                  {errors.form && <p role="alert" className="mt-8 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">{errors.form}</p>}
                   <div className="mt-10 flex flex-col-reverse items-start justify-between gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
                     <p className="flex items-center gap-2 text-[13.5px] text-slate"><Lock size={14} className="text-bridge-600" /> Sent over an encrypted connection</p>
                     <button disabled={sending} className="btn-primary h-[52px] w-full px-9 disabled:opacity-70 sm:w-auto">

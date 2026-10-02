@@ -7,6 +7,7 @@ import { enterDelay } from '../Transition'
 import { US_VIEWBOX, US_NATION, US_STATES, US_CITIES } from '../../data/usMap'
 import { categories, jobs } from '../../data/jobs'
 import { portrait } from '../../data/photos'
+import { site } from '../../lib/siteData'
 
 gsap.registerPlugin(MotionPathPlugin)
 
@@ -97,11 +98,11 @@ export default function Hero() {
       <div data-hero-content className="frame relative grid flex-1 items-center gap-14 pt-36 pb-12 lg:grid-cols-12 lg:gap-10 lg:pt-40">
         <div className="lg:col-span-7">
           <h1 data-hero-title className="text-balance text-[clamp(48px,6.6vw,112px)] leading-[0.95] tracking-tightest text-white">
-            Work from home for America’s best employers.
+            {site.heroTitle}
           </h1>
           <div data-hero-sub>
             <p className="mt-8 max-w-[58ch] text-[19px] leading-relaxed text-white/75">
-              PremierRemoteBridge places US-based professionals in fully remote roles: data entry, customer support, bookkeeping, payroll, admin, accounting and more. Real employers, pay on every listing, and a recruiter who replies.
+              {site.heroSubtitle}
             </p>
 
             <form onSubmit={submit} role="search" className="mt-10 flex max-w-[760px] flex-col gap-2 rounded-[22px] bg-white p-2 shadow-[0_30px_80px_-30px_rgba(0,0,0,.6)] sm:flex-row sm:rounded-full">
