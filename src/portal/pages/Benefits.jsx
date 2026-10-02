@@ -13,7 +13,7 @@ export default function Benefits() {
 
   return (
     <div className="space-y-6">
-      <PageHead title="Benefits" sub="Your 2026 coverage, what it costs per paycheck and what RemoteBridge pays toward it." />
+      <PageHead title="Benefits" sub="Your 2026 coverage, what it costs per paycheck and what PremierRemoteBridge pays toward it." />
 
       <div className="flex items-start gap-3 rounded-2xl bg-bridge-950 p-5 text-white sm:items-center">
         <CalendarClock size={22} className="shrink-0 text-bridge-200" />

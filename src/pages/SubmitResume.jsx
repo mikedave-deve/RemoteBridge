@@ -86,7 +86,7 @@ export default function SubmitResume() {
   return (
     <>
       <PageHeader kicker="Submit your résumé" image="laptopsMeeting" compact title={role ? `Apply: ${role.title}` : 'One résumé. Every remote job that fits.'}>
-        {role ? `${role.company} · ${role.location}. A recruiter will review your application within five business days.` : 'Send your résumé once. A RemoteBridge recruiter reads every one and contacts you when a work-from-home job matches your skills.'}
+        {role ? `${role.company} · ${role.location}. A recruiter will review your application within five business days.` : 'Send your résumé once. A PremierRemoteBridge recruiter reads every one and contacts you when a work-from-home job matches your skills.'}
       </PageHeader>
 
       <section ref={ref} className="bg-paper py-16 lg:py-24">
@@ -156,7 +156,7 @@ export default function SubmitResume() {
                     <div className="sm:col-span-2">
                       <label className="flex gap-3 text-[15px] leading-relaxed text-slate">
                         <input id="consent" type="checkbox" checked={data.consent} onChange={set('consent')} className="mt-1 h-4 w-4 shrink-0 accent-bridge-600" />
-                        I agree that RemoteBridge may store my résumé for 24 months and share it with employers only with my permission. I can ask for it to be deleted at any time.
+                        I agree that PremierRemoteBridge may store my résumé for 24 months and share it with employers only with my permission. I can ask for it to be deleted at any time.
                       </label>
                       {errors.consent && <p id="consent-err" className="mt-2 text-[14px] text-red-700">{errors.consent}</p>}
                     </div>

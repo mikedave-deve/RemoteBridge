@@ -7,10 +7,10 @@ import { gsap, useGSAP } from '../lib/gsap'
 const cols = [
   { title: 'Find work', links: [['Browse all jobs', '/jobs'], ['Data entry jobs', '/jobs?dept=Data%20Entry'], ['Customer support jobs', '/jobs?dept=Customer%20Support'], ['Bookkeeping jobs', '/jobs?dept=Bookkeeping'], ['Payroll jobs', '/jobs?dept=Payroll']] },
   { title: 'Your account', links: [['Submit your résumé', '/submit-resume'], ['Create an account', '/create-account'], ['Log in', '/login'], ['Accounting jobs', '/jobs?dept=Accounting'], ['Admin jobs', '/jobs?dept=Administrative']] },
-  { title: 'Company', links: [['About RemoteBridge', '/about'], ['Our team', '/team'], ['For employers', '/about#employers'], ['Contact us', '/about#contact']] },
+  { title: 'Company', links: [['About PremierRemoteBridge', '/about'], ['Our team', '/team'], ['For employers', '/about#employers'], ['Contact us', '/about#contact']] },
 ]
 
-const WORD = 'RemoteBridge'
+const WORD = 'PremierRemoteBridge'
 
 export default function Footer() {
   const ref = useRef(null)
@@ -66,7 +66,7 @@ export default function Footer() {
           <div data-fcol className="lg:col-span-4">
             <Logo tone="light" size="lg" />
             <p className="mt-7 max-w-sm text-[16px] leading-relaxed">
-              RemoteBridge connects people across all 50 states with vetted US employers hiring for fully remote, work-from-home roles.
+              PremierRemoteBridge connects people across all 50 states with vetted US employers hiring for fully remote, work-from-home roles.
             </p>
             <ul className="mt-7 space-y-2.5 text-[14px]">
               <li className="flex items-center gap-2.5"><MapPin size={16} className="text-bridge-200" /> 1180 Peachtree St NE, Atlanta, GA 30309</li>
@@ -96,7 +96,7 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col gap-4 border-t border-white/10 py-7 text-[13.5px] sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} RemoteBridge, Inc. Equal opportunity employer. All jobs are 100% remote within the United States.</p>
+          <p>© {new Date().getFullYear()} PremierRemoteBridge, Inc. Equal opportunity employer. All jobs are 100% remote within the United States.</p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             <li><a href="#" className="hover:text-white">Privacy policy</a></li>
             <li><a href="#" className="hover:text-white">Terms of use</a></li>

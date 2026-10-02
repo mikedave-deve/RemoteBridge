@@ -27,10 +27,10 @@ export default function FeaturedJobs() {
       <div className="frame">
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div>
-            <p className="kicker" data-fade>RemoteBridge jobs</p>
+            <p className="kicker" data-fade>PremierRemoteBridge jobs</p>
             <h2 data-split className="mt-5 text-[clamp(40px,4.8vw,76px)] tracking-tightest">Remote jobs open right now</h2>
             <p data-fade className="mt-5 max-w-2xl text-[18px] text-slate">
-              {jobs.length} work-from-home roles with verified US employers. Pay is listed on every job, and a RemoteBridge recruiter reviews every application.
+              {jobs.length} work-from-home roles with verified US employers. Pay is listed on every job, and a PremierRemoteBridge recruiter reviews every application.
             </p>
           </div>
           <Link data-fade to="/jobs" className="btn-dark h-14 shrink-0 px-7 text-[16px]">View all {jobs.length} jobs <ArrowRight size={18} /></Link>

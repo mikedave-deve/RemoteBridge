@@ -18,7 +18,7 @@ export default function Taxes() {
 
   return (
     <div className="space-y-6">
-      <PageHead title="Tax forms" sub="Year-end forms and the withholding elections RemoteBridge uses to calculate your paycheck." />
+      <PageHead title="Tax forms" sub="Year-end forms and the withholding elections PremierRemoteBridge uses to calculate your paycheck." />
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2" title={`Form W-2, ${w2.year}`} action={<button onClick={() => window.print()} className="inline-flex items-center gap-1.5 text-[14px] text-bridge-700 hover:underline"><Download size={15} /> Download PDF</button>}>

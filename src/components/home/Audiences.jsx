@@ -15,7 +15,7 @@ const sides = [
     id: 'employers', title: 'For US employers', lead: 'Vetted remote staff in any state, without the paperwork.',
     body: 'Tell us the role. We source, screen and shortlist candidates, then handle multi-state payroll, tax registration and onboarding so your new hire starts on time.',
     points: ['Shortlist of three in ten business days', 'Payroll and tax in all 50 states', 'Background and E-Verify checks', 'Free replacement within 90 days'],
-    cta: ['Hire through RemoteBridge', '/about#contact'], tone: 'dark', img: 'boardroom', alt: 'A hiring team meeting in a glass-walled boardroom',
+    cta: ['Hire through PremierRemoteBridge', '/about#contact'], tone: 'dark', img: 'boardroom', alt: 'A hiring team meeting in a glass-walled boardroom',
   },
 ]
 

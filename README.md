@@ -1,4 +1,4 @@
-# RemoteBridge — website
+# PremierRemoteBridge — website
 
 React 19 + Vite + Tailwind CSS 3, with GSAP (ScrollTrigger, SplitText, MotionPath) and Lenis smooth scrolling.
 

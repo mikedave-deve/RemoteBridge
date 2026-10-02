@@ -101,7 +101,7 @@ export default function Hero() {
           </h1>
           <div data-hero-sub>
             <p className="mt-8 max-w-[58ch] text-[19px] leading-relaxed text-white/75">
-              RemoteBridge places US-based professionals in fully remote roles: data entry, customer support, bookkeeping, payroll, admin, accounting and more. Real employers, pay on every listing, and a recruiter who replies.
+              PremierRemoteBridge places US-based professionals in fully remote roles: data entry, customer support, bookkeeping, payroll, admin, accounting and more. Real employers, pay on every listing, and a recruiter who replies.
             </p>
 
             <form onSubmit={submit} role="search" className="mt-10 flex max-w-[760px] flex-col gap-2 rounded-[22px] bg-white p-2 shadow-[0_30px_80px_-30px_rgba(0,0,0,.6)] sm:flex-row sm:rounded-full">
@@ -152,7 +152,7 @@ export default function Hero() {
                 <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full ring-[1.5px] ring-inset ring-bridge-200" /> After hours</span>
               </div>
             </div>
-            <svg viewBox={US_VIEWBOX} className="mt-4 w-full" role="img" aria-label="Map of the United States showing cities where RemoteBridge professionals work and the employers they joined">
+            <svg viewBox={US_VIEWBOX} className="mt-4 w-full" role="img" aria-label="Map of the United States showing cities where PremierRemoteBridge professionals work and the employers they joined">
               <path data-state d={US_NATION} fill="rgba(255,255,255,.07)" stroke="rgba(127,185,195,.45)" strokeWidth="1.2" strokeLinejoin="round" />
               <path data-state d={US_STATES} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth=".8" strokeLinejoin="round" />
               {routes.map((r, i) => (

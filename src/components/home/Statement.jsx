@@ -32,7 +32,7 @@ export default function Statement() {
       <div className="frame mt-20 lg:mt-24">
         <div data-plx className="relative h-[56vh] min-h-[380px] overflow-hidden rounded-[28px] lg:h-[82vh]">
           <Img src={photo('highFive', 2400)} alt="Two colleagues celebrating a result at their desks"
-            label="Remote Bridge" className="absolute inset-0 -top-[6%] h-[112%] w-full" />
+            label="Premier Remote Bridge" className="absolute inset-0 -top-[6%] h-[112%] w-full" />
           <div className="absolute inset-0 bg-gradient-to-t from-bridge-950/85 via-bridge-950/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 grid gap-6 p-6 text-white sm:p-10 md:grid-cols-3 lg:p-14">
             {[

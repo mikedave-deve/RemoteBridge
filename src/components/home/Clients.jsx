@@ -30,7 +30,7 @@ export default function Clients() {
   }, { scope: ref })
 
   return (
-    <section ref={ref} className="border-b border-line bg-white py-12" aria-label="Companies hiring through RemoteBridge">
+    <section ref={ref} className="border-b border-line bg-white py-12" aria-label="Companies hiring through PremierRemoteBridge">
       <div className="frame mb-8 flex flex-col justify-between gap-2 text-[15px] text-slate sm:flex-row">
         <p>Trusted by 640 US employers, from family-owned practices to national brands.</p>
         <p className="text-slate-soft">Every employer verified before a single job is posted</p>

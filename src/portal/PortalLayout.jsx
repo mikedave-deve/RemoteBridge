@@ -134,7 +134,7 @@ export default function PortalLayout() {
               {menu && (
                 <div className="absolute right-0 top-12 w-[220px] rounded-2xl bg-white p-2 shadow-xl ring-1 ring-line">
                   <Link to="/portal/profile" className="block rounded-xl px-3 py-2.5 text-[14px] hover:bg-paper">Profile & security</Link>
-                  <Link to="/" className="block rounded-xl px-3 py-2.5 text-[14px] hover:bg-paper">RemoteBridge website</Link>
+                  <Link to="/" className="block rounded-xl px-3 py-2.5 text-[14px] hover:bg-paper">PremierRemoteBridge website</Link>
                   <button onClick={() => leave('signout')} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[14px] text-red-700 hover:bg-red-50"><LogOut size={16} /> Sign out</button>
                 </div>
               )}

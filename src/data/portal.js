@@ -1,10 +1,10 @@
-// Demo data for the employee portal. One W-2 employee, paid biweekly through RemoteBridge.
+// Demo data for the employee portal. One W-2 employee, paid biweekly through PremierRemoteBridge.
 export const employee = {
   id: 'RB-204871',
   first: 'Andre', last: 'Williams', preferred: 'Andre',
   title: 'Bookkeeper', department: 'Finance & Accounting',
   client: 'Westbrook & Hale CPAs', manager: 'Laura Bennett', recruiter: 'Samuel Adams',
-  email: 'andre.williams@email.com', workEmail: 'a.williams@remotebridge.com', phone: '(614) 555-0148',
+  email: 'andre.williams@email.com', workEmail: 'a.williams@premierremotebridge.com', phone: '(614) 555-0148',
   address: ['2241 Northwest Blvd', 'Columbus, OH 43221'],
   ssnLast4: '4821', dob: 'May 14, 1990',
   startDate: 'March 10, 2025', type: 'Full-time, non-exempt (hourly)', rate: 27, payFrequency: 'Biweekly (every other Friday)',
@@ -98,7 +98,7 @@ export const ytd = (() => {
 export const nextPay = { date: new Date(2026, 9, 16), periodStart: new Date(2026, 8, 20), periodEnd: new Date(2026, 9, 3), estimate: payStubs[0].net }
 
 export const w2s = [
-  { year: 2025, employer: 'RemoteBridge, Inc.', ein: '**-***4410', box1: 41982.17, box2: 2201.4, box3: 45108.4, box4: 2796.72, box5: 45108.4, box6: 654.07, box12d: 2836.92, box16: 41982.17, box17: 389.66, box18: 45108.4, box19: 1127.71, issued: 'January 27, 2026' },
+  { year: 2025, employer: 'PremierRemoteBridge, Inc.', ein: '**-***4410', box1: 41982.17, box2: 2201.4, box3: 45108.4, box4: 2796.72, box5: 45108.4, box6: 654.07, box12d: 2836.92, box16: 41982.17, box17: 389.66, box18: 45108.4, box19: 1127.71, issued: 'January 27, 2026' },
 ]
 
 export const timeOff = {
@@ -152,7 +152,7 @@ export const benefits = {
     { name: 'Short- & long-term disability', plan: '60% income replacement', tier: 'Employee', perCheck: 0, employer: 11.8, details: ['STD after 7 days, LTD after 90 days', 'Employer paid'], id: 'DIS-20981' },
     { name: 'Employee Assistance Program', plan: 'Confidential support 24/7', tier: 'Household', perCheck: 0, employer: 2.1, details: ['6 free counseling sessions per issue', 'Legal and financial consultations'], id: 'EAP-0091' },
   ],
-  retirement: { plan: 'RemoteBridge 401(k) Plan', contribution: 6, type: 'Traditional (pre-tax)', match: 'Dollar-for-dollar up to 4% of pay', vesting: 'Immediately 100% vested in your contributions; employer match vests over 3 years', balance: 7418.36, limit: 24500 },
+  retirement: { plan: 'PremierRemoteBridge 401(k) Plan', contribution: 6, type: 'Traditional (pre-tax)', match: 'Dollar-for-dollar up to 4% of pay', vesting: 'Immediately 100% vested in your contributions; employer match vests over 3 years', balance: 7418.36, limit: 24500 },
   beneficiaries: [
     { name: 'Monique Williams', relation: 'Sister', share: 100, type: 'Primary' },
     { name: 'Gerald Williams', relation: 'Father', share: 100, type: 'Contingent' },

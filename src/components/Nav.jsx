@@ -106,8 +106,9 @@ export default function Nav() {
           Skip to content
         </a>
         <nav className="frame flex h-[84px] items-center justify-between gap-6" aria-label="Main">
-          <Link to="/" aria-label="RemoteBridge home" className="relative z-50 shrink-0">
-            <Logo tone={light ? 'light' : 'brand'} />
+          <Link to="/" aria-label="PremierRemoteBridge home" className="relative z-50 shrink-0">
+            <Logo size="xs" tone={light ? 'light' : 'brand'} className="sm:hidden" />
+            <Logo tone={light ? 'light' : 'brand'} className="hidden sm:inline-flex" />
           </Link>
           <ul className="hidden items-center gap-1 xl:flex">
             {links.map((l) => (
@@ -129,7 +130,7 @@ export default function Nav() {
             </Link>
           </div>
           <div className="flex items-center gap-2 xl:hidden">
-            <Link to="/jobs" className={`btn-accent h-10 px-4 text-[14px] lg:hidden ${open ? 'invisible' : ''}`}><span className="sm:hidden">Jobs</span><span className="hidden sm:inline">Browse jobs</span></Link>
+            <Link to="/jobs" className={`btn-accent hidden h-10 px-4 text-[14px] sm:inline-flex lg:hidden ${open ? 'invisible' : ''}`}>Browse jobs</Link>
             <button
               className={`relative z-50 grid h-11 w-11 place-items-center rounded-full ${light ? 'text-white' : 'text-ink'}`}
               onClick={() => setOpen((o) => !o)}

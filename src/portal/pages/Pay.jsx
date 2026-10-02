@@ -49,7 +49,7 @@ function Stub({ idx }) {
           <p className="text-[14px] text-slate">Pay period {fmtDate(s.start, { month: 'short', day: 'numeric' })} – {fmtDate(s.end)} · Check no. {s.id}</p>
         </div>
         <div className="text-[14px] sm:text-right">
-          <p className="font-medium">RemoteBridge, Inc.</p>
+          <p className="font-medium">PremierRemoteBridge, Inc.</p>
           <p className="text-slate">1180 Peachtree St NE, Atlanta, GA 30309</p>
           <p className="mt-2 font-medium">{employee.first} {employee.last}</p>
           <p className="text-slate">{employee.address.join(', ')} · Employee ID {employee.id}</p>

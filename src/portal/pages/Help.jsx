@@ -26,7 +26,7 @@ export default function Help() {
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <Mail size={20} className="text-bridge-700" />
           <p className="mt-3 font-medium">Your recruiter</p>
-          <p className="text-[14px] text-slate">{employee.recruiter} · s.adams@remotebridge.com</p>
+          <p className="text-[14px] text-slate">{employee.recruiter} · s.adams@premierremotebridge.com</p>
         </div>
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <HeartHandshake size={20} className="text-bridge-700" />
@@ -66,7 +66,7 @@ export default function Help() {
         <ShieldAlert size={22} className="mt-0.5 shrink-0 text-bridge-700" />
         <div>
           <p className="font-medium">Report a workplace concern</p>
-          <p className="mt-1 text-[14.5px] text-slate">Harassment, discrimination, safety issues or wage concerns can be reported confidentially to HR or anonymously through our ethics line at (800) 555-0199. RemoteBridge prohibits retaliation against anyone who raises a concern in good faith.</p>
+          <p className="mt-1 text-[14.5px] text-slate">Harassment, discrimination, safety issues or wage concerns can be reported confidentially to HR or anonymously through our ethics line at (800) 555-0199. PremierRemoteBridge prohibits retaliation against anyone who raises a concern in good faith.</p>
         </div>
       </div>
     </div>

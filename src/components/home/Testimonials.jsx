@@ -5,9 +5,9 @@ import { portrait } from '../../data/photos'
 
 const quotes = [
   { q: 'I went from a two-hour commute to a desk in my spare room. Same company benefits, a better paycheck, and I am home when my kids get off the bus.', who: 'Tanya Morales', role: 'Data Entry Specialist, Harborline Insurance', place: 'El Paso, TX', side: 'Job seeker', img: 'w4' },
-  { q: 'We needed six customer support reps across three time zones in a month. RemoteBridge sent shortlists in eight days and handled payroll registration in four new states.', who: 'Greg Whitfield', role: 'VP Customer Experience, Old Harbor Bank', place: 'Boston, MA', side: 'Employer', img: 'm5' },
+  { q: 'We needed six customer support reps across three time zones in a month. PremierRemoteBridge sent shortlists in eight days and handled payroll registration in four new states.', who: 'Greg Whitfield', role: 'VP Customer Experience, Old Harbor Bank', place: 'Boston, MA', side: 'Employer', img: 'm5' },
   { q: 'It was the first time I knew the pay before the first call. My recruiter told me exactly what to expect in the interview, and I had an offer ten days later.', who: 'Andre Williams', role: 'Bookkeeper, Westbrook & Hale CPAs', place: 'Columbus, OH', side: 'Job seeker', img: 'm7' },
-  { q: 'Our payroll team is fully remote now, spread across five states. Every one of them came through RemoteBridge, and every one is still here.', who: 'Linda Park', role: 'Controller, Ironwood Payroll Services', place: 'Dallas, TX', side: 'Employer', img: 'w8' },
+  { q: 'Our payroll team is fully remote now, spread across five states. Every one of them came through PremierRemoteBridge, and every one is still here.', who: 'Linda Park', role: 'Controller, Ironwood Payroll Services', place: 'Dallas, TX', side: 'Employer', img: 'w8' },
 ]
 
 export default function Testimonials() {

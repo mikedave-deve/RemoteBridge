@@ -73,7 +73,7 @@ export default function JobDetail() {
             </ul>
             <div className="mt-14 flex gap-4 rounded-2xl bg-bridge-50/60 p-6 text-[15px] leading-relaxed text-ink ring-1 ring-bridge-200">
               <ShieldCheck size={22} className="mt-0.5 shrink-0 text-bridge-700" />
-              <p><strong className="font-semibold">Verified employer.</strong> RemoteBridge has confirmed this company, the hiring manager and the pay range. You will never be asked to pay for training, equipment or a background check.</p>
+              <p><strong className="font-semibold">Verified employer.</strong> PremierRemoteBridge has confirmed this company, the hiring manager and the pay range. You will never be asked to pay for training, equipment or a background check.</p>
             </div>
           </article>
           <aside className="lg:col-span-4 lg:col-start-9">
@@ -84,7 +84,7 @@ export default function JobDetail() {
               </div>
               <div className="p-8 pt-2">
                 <p className="font-display text-[30px] leading-tight">Apply for this job</p>
-                <p className="mt-3 text-[15px] leading-relaxed text-white/70">A RemoteBridge recruiter reviews every application within five business days and replies either way.</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-white/70">A PremierRemoteBridge recruiter reviews every application within five business days and replies either way.</p>
                 <Link to={`/submit-resume?role=${job.id}`} className="btn-accent mt-8 w-full"><FileText size={18} /> Apply with your résumé</Link>
                 <Link to="/create-account" className="btn-outline-light mt-3 w-full">Create an account to track it</Link>
                 <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-6">

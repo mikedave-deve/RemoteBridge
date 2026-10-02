@@ -96,7 +96,7 @@ function Jobs() {
   return (
     <>
       <PageHeader kicker="Browse jobs" image="openOffice" title={<>{jobs.length} remote jobs. <span className="">Pay on every one.</span></>}>
-        Every role is fully work-from-home within the United States, with a verified employer, a confirmed pay range and a RemoteBridge recruiter who reviews your application.
+        Every role is fully work-from-home within the United States, with a verified employer, a confirmed pay range and a PremierRemoteBridge recruiter who reviews your application.
       </PageHeader>
 
       <section className="bg-paper py-14 lg:py-20">

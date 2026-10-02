@@ -1,5 +1,5 @@
 /**
- * RemoteBridge mark: two circles, the employer and the professional. The lens
+ * PremierRemoteBridge mark: two circles, the employer and the professional. The lens
  * where they overlap is the bridge between them.
  */
 export const LENS = 'M24 15.515A11 11 0 0 1 24 32.485A11 11 0 0 1 24 15.515Z'
@@ -19,14 +19,16 @@ export default function Logo({ tone = 'brand', className = '', size = 'md' }) {
   const light = tone === 'light'
   const s = size === 'lg'
     ? { mark: 'h-10 w-[50px]', word: 'text-[28px]' }
-    : size === 'sm'
-      ? { mark: 'h-7 w-[35px]', word: 'text-[19px]' }
+    : size === 'xs'
+      ? { mark: 'h-6 w-[30px]', word: 'text-[16px]' }
+      : size === 'sm'
+        ? { mark: 'h-7 w-[35px]', word: 'text-[19px]' }
       : { mark: 'h-8 w-10', word: 'text-[23px]' }
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark tone={tone} className={`${s.mark} shrink-0`} />
       <span className={`font-sans ${s.word} font-[650] leading-none tracking-[-0.035em] ${light ? 'text-white' : 'text-ink'}`}>
-        RemoteBridge
+        PremierRemoteBridge
       </span>
     </span>
   )

@@ -32,7 +32,7 @@ export default function Team() {
         <div className="frame">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <h2 data-split className="text-[clamp(36px,4vw,56px)] tracking-tightest">Leadership</h2>
-            <p data-fade className="max-w-md text-[17px] text-slate">Every member of our leadership team has hired, managed or worked on a remote team before joining RemoteBridge.</p>
+            <p data-fade className="max-w-md text-[17px] text-slate">Every member of our leadership team has hired, managed or worked on a remote team before joining PremierRemoteBridge.</p>
           </div>
           <div className="mt-14 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
             {leadership.map((p) => (
@@ -83,7 +83,7 @@ export default function Team() {
         </div>
         <div className="frame mt-16 flex flex-col items-start justify-between gap-6 rounded-[24px] bg-bridge-900 p-8 text-white sm:flex-row sm:items-center sm:p-10">
           <div><p className="font-display text-[30px]">Want to work with us?</p><p className="mt-2 text-white/70">We are hiring recruiters and payroll specialists in eight states.</p></div>
-          <Link to="/jobs" className="btn-light">See RemoteBridge roles</Link>
+          <Link to="/jobs" className="btn-light">See PremierRemoteBridge roles</Link>
         </div>
       </section>
       <CtaBand />

@@ -13,7 +13,7 @@ const history = [
   ['2021', 'Specialist recruiting teams', 'Recruiting splits into specialist teams led by people from each field, starting with finance, payroll and customer support.'],
   ['2023', '5,000 Americans placed', 'We pass five thousand placements and begin publishing our retention and pay figures every year.'],
   ['2025', 'Verified employer program', 'Every employer on our board is now verified in person or by video, with SOC 2 Type II certification for our platform.'],
-  ['2026', '12,400 people and counting', 'Today 180 RemoteBridge staff in 31 states support 12,400 placed professionals and 640 US employers.'],
+  ['2026', '12,400 people and counting', 'Today 180 PremierRemoteBridge staff in 31 states support 12,400 placed professionals and 640 US employers.'],
 ]
 
 const services = [
@@ -31,8 +31,8 @@ function Contact() {
           <h2 data-split className="text-[clamp(38px,4.4vw,60px)] tracking-tightest">Talk to our hiring team</h2>
           <p data-fade className="mt-6 text-[17px] leading-relaxed text-slate">Tell us about the role. A partner from the right recruiting team will reply within one business day with a proposed approach, timeline and flat fee.</p>
           <dl data-fade className="mt-10 space-y-5 text-[16px]">
-            <div><dt className="text-slate">Employers</dt><dd className="font-medium"><a className="link-u" href="mailto:hire@remotebridge.com">hire@remotebridge.com</a></dd></div>
-            <div><dt className="text-slate">Professionals</dt><dd className="font-medium"><a className="link-u" href="mailto:talent@remotebridge.com">talent@remotebridge.com</a></dd></div>
+            <div><dt className="text-slate">Employers</dt><dd className="font-medium"><a className="link-u" href="mailto:hire@premierremotebridge.com">hire@premierremotebridge.com</a></dd></div>
+            <div><dt className="text-slate">Professionals</dt><dd className="font-medium"><a className="link-u" href="mailto:talent@premierremotebridge.com">talent@premierremotebridge.com</a></dd></div>
             <div><dt className="text-slate">Offices</dt><dd className="font-medium">Atlanta, New York, Chicago, Dallas, Denver</dd></div>
           </dl>
         </div>
@@ -76,22 +76,22 @@ export default function About() {
 
   return (
     <div ref={ref}>
-      <PageHeader kicker="About RemoteBridge" image="townhall" title="We build the bridge, then we look after it.">
-        RemoteBridge is an American recruiting and employment company for remote work. We find the right person, employ them properly in their home state, and stay involved long after the start date.
+      <PageHeader kicker="About PremierRemoteBridge" image="townhall" title="We build the bridge, then we look after it.">
+        PremierRemoteBridge is an American recruiting and employment company for remote work. We find the right person, employ them properly in their home state, and stay involved long after the start date.
       </PageHeader>
 
       <section className="bg-paper py-24 lg:py-32">
         <div className="frame grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-5">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[28px]">
-              <Img src={photo('teamTable', 1200, 1500)} alt="Colleagues working together at a shared table" label="Remote Bridge" className="absolute inset-0 h-full w-full" />
+              <Img src={photo('teamTable', 1200, 1500)} alt="Colleagues working together at a shared table" label="Premier Remote Bridge" className="absolute inset-0 h-full w-full" />
             </div>
           </div>
           <div className="lg:col-span-6 lg:col-start-7 lg:pt-10">
             <h2 data-split className="text-[clamp(34px,3.6vw,52px)] tracking-tightest">A company started by people who had been on both sides of the hire.</h2>
             <div data-fade className="mt-8 space-y-5 font-display text-[20px] leading-[1.65] text-ink/85">
               <p>Daniel spent twelve years filling call-center and back-office roles for insurers in the Southeast. The talent was never the problem. The problem was geography: great people in small towns could not reach good jobs in big cities, and employers could not reach them.</p>
-              <p>William had run payroll and compliance for a national staffing firm and knew how employment worked in every state. In 2018 they started RemoteBridge to do remote recruiting and employment as one job, done carefully, for a flat fee.</p>
+              <p>William had run payroll and compliance for a national staffing firm and knew how employment worked in every state. In 2018 they started PremierRemoteBridge to do remote recruiting and employment as one job, done carefully, for a flat fee.</p>
               <p>Eight years later we are 180 people in 31 states. The idea has not changed.</p>
             </div>
           </div>

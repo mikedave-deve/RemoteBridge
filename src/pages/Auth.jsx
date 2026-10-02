@@ -10,7 +10,7 @@ import { formatPhone, validEmail, validPhone } from '../lib/validate'
 
 const MAX_ATTEMPTS = 5
 const LOCK_SECONDS = 30
-const COMMON = ['password', 'password1', 'password123', '12345678', '123456789', 'qwerty123', 'iloveyou', 'letmein1', 'welcome1', 'admin123', 'abc12345', 'remotebridge']
+const COMMON = ['password', 'password1', 'password123', '12345678', '123456789', 'qwerty123', 'iloveyou', 'letmein1', 'welcome1', 'admin123', 'abc12345', 'remotebridge', 'premierremotebridge']
 
 function Shell({ title, sub, children, image, quote }) {
   const ref = useRef(null)
@@ -31,7 +31,7 @@ function Shell({ title, sub, children, image, quote }) {
         <div className="absolute inset-0 bg-gradient-to-t from-bridge-950 via-bridge-950/50 to-bridge-950/25" />
         <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-bridge-950/75 to-transparent" />
         <div data-auth-side className="relative flex h-full flex-col justify-between p-12 xl:p-16">
-          <Link to="/" aria-label="RemoteBridge home"><Logo tone="light" /></Link>
+          <Link to="/" aria-label="PremierRemoteBridge home"><Logo tone="light" /></Link>
           <div>
             <figure className="max-w-lg">
               <blockquote className="font-display text-[clamp(28px,2.4vw,38px)] leading-[1.22]">“{quote.q}”</blockquote>
@@ -48,7 +48,7 @@ function Shell({ title, sub, children, image, quote }) {
       <div className="flex flex-col bg-paper px-5 py-7 sm:px-10 lg:px-16">
         <div className="flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-2 text-[15px] text-slate hover:text-bridge-600"><ArrowLeft size={16} /> Back to site</Link>
-          <Link to="/" className="lg:hidden" aria-label="RemoteBridge home"><Logo size="sm" /></Link>
+          <Link to="/" className="lg:hidden" aria-label="PremierRemoteBridge home"><Logo size="sm" /></Link>
           <span className="hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[13px] text-bridge-700 ring-1 ring-line lg:inline-flex"><Lock size={13} /> Secure connection</span>
         </div>
         <div data-auth className="mx-auto my-auto w-full max-w-[460px] py-14">
@@ -57,7 +57,7 @@ function Shell({ title, sub, children, image, quote }) {
           {children}
         </div>
         <p className="mx-auto max-w-[460px] text-center text-[12.5px] leading-relaxed text-slate-soft">
-          RemoteBridge will never ask for your password by email, text or phone. Never pay anyone to apply for a job.
+          PremierRemoteBridge will never ask for your password by email, text or phone. Never pay anyone to apply for a job.
         </p>
       </div>
     </div>
@@ -155,7 +155,7 @@ export function Login() {
           </button>
         </div>
       </form>
-      <p className="mt-8 text-center text-[15px] text-slate">New to RemoteBridge? <Link to="/create-account" className="font-medium text-bridge-600 hover:underline">Create an account</Link></p>
+      <p className="mt-8 text-center text-[15px] text-slate">New to PremierRemoteBridge? <Link to="/create-account" className="font-medium text-bridge-600 hover:underline">Create an account</Link></p>
     </Shell>
   )
 }

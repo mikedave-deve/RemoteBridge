@@ -18,7 +18,7 @@ export default function Dashboard() {
           <img src={employee.photo} alt="" className="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/15" />
           <div>
             <h1 className="text-[clamp(26px,2.6vw,36px)] tracking-tightest text-white">{hello}, {employee.preferred}</h1>
-            <p className="mt-1 text-[15px] text-white/70">{employee.title} at {employee.client} · Employed through RemoteBridge since {employee.startDate}</p>
+            <p className="mt-1 text-[15px] text-white/70">{employee.title} at {employee.client} · Employed through PremierRemoteBridge since {employee.startDate}</p>
           </div>
         </div>
         <Link to="/portal/time" className="btn-accent h-11 shrink-0 px-5"><Clock size={17} /> Go to timesheet</Link>

@@ -3,7 +3,7 @@ const m = (file) => `/media/${encodeURIComponent(file)}`
 
 export const leadership = [
   { name: 'Daniel Brooks', role: 'Co-founder & Chief Executive Officer', city: 'Atlanta, GA', img: m('CEO RB.jpg'),
-    bio: 'Spent twelve years running staffing for insurers and banks across the Southeast before founding RemoteBridge in 2018.' },
+    bio: 'Spent twelve years running staffing for insurers and banks across the Southeast before founding PremierRemoteBridge in 2018.' },
   { name: 'Matthew Sullivan', role: 'Hiring Manager', city: 'New York, NY', img: m('HRM RB.jpg'),
     bio: 'Leads hiring across every job category and signs off each shortlist before it reaches an employer. Twenty years in recruiting.' },
   { name: 'William Parker', role: 'Co-founder & Chief Operating Officer', city: 'Chicago, IL', img: m('COO RB.jpg'),
