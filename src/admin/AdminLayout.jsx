@@ -1,14 +1,12 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ExternalLink, Inbox, LayoutDashboard, LogOut, Menu, PenSquare, ShieldCheck, Users, X } from 'lucide-react'
+import { ExternalLink, LayoutDashboard, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react'
 import Logo from '../components/Logo'
 import { signOut, useSession } from '../portal/session'
 
 const nav = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/users', label: 'Employees & approvals', icon: Users },
-  { to: '/admin/inbox', label: 'Inbox', icon: Inbox },
-  { to: '/admin/content', label: 'Site content', icon: PenSquare },
 ]
 
 function Sidebar({ onNavigate }) {

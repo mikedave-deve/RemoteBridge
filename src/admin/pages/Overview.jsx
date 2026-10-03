@@ -55,7 +55,7 @@ export default function Overview() {
           </ul>
         </Card>
 
-        <Card title="Latest from the website" pad={false} action={<Link to="/admin/inbox" className="text-[14px] text-bridge-700 hover:underline">Open inbox</Link>}>
+        <Card title="Latest from the website" pad={false}>
           <ul className="divide-y divide-line">
             {(inbox.data?.submissions || []).slice(0, 6).map((m) => (
               <li key={m.id} className="flex items-start gap-3 px-6 py-4">

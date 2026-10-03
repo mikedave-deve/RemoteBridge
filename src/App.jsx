@@ -25,7 +25,7 @@ const P = { Dashboard: portal('Dashboard'), Pay: portal('Pay'), Taxes: portal('T
 // Admin portal: loaded only for admins.
 const AdminLayout = lazy(() => import('./admin/AdminLayout'))
 const admin = (name) => lazy(() => import(`./admin/pages/${name}.jsx`))
-const A = { Overview: admin('Overview'), Users: admin('Users'), Inbox: admin('Inbox'), Content: admin('Content') }
+const A = { Overview: admin('Overview'), Users: admin('Users') }
 
 // Warm the page chunks once the browser is idle so navigation stays instant.
 const preload = () => Promise.all([import('./pages/Jobs'), import('./pages/JobDetail'), import('./pages/SubmitResume'), import('./pages/About'), import('./pages/Team'), import('./pages/Auth')])
@@ -59,8 +59,6 @@ export default function App() {
         <Route path="admin" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><AdminLayout /></Suspense>}>
           <Route index element={<A.Overview />} />
           <Route path="users" element={<A.Users />} />
-          <Route path="inbox" element={<A.Inbox />} />
-          <Route path="content" element={<A.Content />} />
         </Route>
         <Route path="portal" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><PortalLayout /></Suspense>}>
           <Route index element={<P.Dashboard />} />

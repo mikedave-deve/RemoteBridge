@@ -86,15 +86,13 @@ export const templates = {
     subject: `New résumé: ${s.first} ${s.last} (${s.field})`,
     html: layout({ preheader: `${s.first} ${s.last} submitted a résumé for ${s.field}.`, title: 'New résumé submitted', body:
       p(`A candidate sent their résumé through the website. The file is attached to this email. Reply to them at <a href="mailto:${esc(s.email)}" style="color:#1F7A8C;">${esc(s.email)}</a>.`)
-      + rows([['Name', `${s.first} ${s.last}`], ['Email', s.email], ['Phone', s.phone], ['Field of interest', s.field], ['Experience', s.level], ['Applying for', s.role], ['Anything else', s.note], ['File', s.fileName]])
-      + button(`${config.siteUrl}/admin/inbox`, 'Open admin inbox') }),
+      + rows([['Name', `${s.first} ${s.last}`], ['Email', s.email], ['Phone', s.phone], ['Field of interest', s.field], ['Experience', s.level], ['Applying for', s.role], ['Anything else', s.note], ['File', s.fileName]]) }),
   }),
   adminContact: (m) => ({
     subject: `Hiring enquiry from ${m.company}: ${m.need}`,
     html: layout({ preheader: `${m.name} at ${m.company} wants to talk to the hiring team.`, title: 'New message for the hiring team', body:
       p(`Someone used “Talk to our hiring team” on the About page. Reply to them at <a href="mailto:${esc(m.email)}" style="color:#1F7A8C;">${esc(m.email)}</a>.`)
-      + rows([['Name', m.name], ['Company', m.company], ['Work email', m.email], ['Needs', m.need], ['Roles to fill', m.roles], ['About the role', m.message]])
-      + button(`${config.siteUrl}/admin/inbox`, 'Open admin inbox') }),
+      + rows([['Name', m.name], ['Company', m.company], ['Work email', m.email], ['Needs', m.need], ['Roles to fill', m.roles], ['About the role', m.message]]) }),
   }),
   adminRegistration: (u, approveUrl, declineUrl) => ({
     subject: `Approve new account: ${u.first} ${u.last}`,
