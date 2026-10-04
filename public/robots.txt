@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /portal
+Disallow: /admin
+Disallow: /api
+Disallow: /login
+Disallow: /create-account
+
+Sitemap: https://remote-bridge-seven.vercel.app/sitemap.xml
