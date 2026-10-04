@@ -76,6 +76,10 @@ export default function Nav() {
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf) }
   }, [])
 
+  // The open menu pauses page scrolling. If the bar unmounts while it is open (e.g. a menu link to
+  // /login or /create-account, which hide the bar), make sure scrolling is switched back on.
+  useEffect(() => () => getLenis()?.start(), [])
+
   useEffect(() => {
     setOpen(false)
     gsap.to(header.current, { yPercent: 0, duration: 0.6, ease: 'expo.out', overwrite: true })

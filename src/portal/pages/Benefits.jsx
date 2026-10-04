@@ -1,15 +1,59 @@
 import { useState } from 'react'
 import { CalendarClock } from 'lucide-react'
-import { benefits, employee, payStubs, usd } from '../../data/portal'
+import { benefits, usd } from '../../data/portal'
+import { api } from '../../lib/api'
+import { PERIODS } from '../../lib/payroll'
+import { useApi } from '../../admin/useApi'
 import { Badge, Card, Field, Notice, PageHead, Table } from '../ui'
+import DetailsBox from '../DetailsBox'
+
+function Retirement({ d }) {
+  const k = d.k401
+  const [pct, setPct] = useState(k.pct)
+  const [saved, setSaved] = useState(false)
+  const [current, setCurrent] = useState(k.pct)
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const periods = PERIODS[d.pay.frequency] || 26
+  // Pay per paycheck: the latest real pay stub, or the hourly rate for a full-time schedule.
+  const gross = d.stats.lastGross || (d.pay.rate * 2080) / periods
+  const perCheck = gross * (pct / 100)
+  const annual = perCheck * periods
+  const overLimit = annual > d.limit
+  const catchUp = d.limits.catchUp[k.catchUp] || 0
+
+  const save = async (e) => {
+    e.preventDefault(); if (overLimit) return
+    setBusy(true); setErr('')
+    try { await api('/me/benefits/401k', { method: 'PUT', body: { pct } }); setCurrent(pct); setSaved(true) } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
+  }
+
+  return (
+    <Card title={d.retirement.plan}>
+      {!k.enrolled ? <p className="text-[14.5px] text-slate">You are not enrolled in the 401(k) plan yet. HR enrolls eligible employees; contact HR from Help & HR to get started.</p> : <>
+        <dl className="grid gap-5 sm:grid-cols-2">
+          <Field label="Current balance" value={usd(d.stats.balance)} />
+          <Field label="Contribution type" value={k.roth ? 'Roth (after-tax)' : 'Traditional (pre-tax)'} />
+          <Field label="Employer match" value={k.matchPct ? `Dollar-for-dollar up to ${k.matchPct}% of pay` : 'No employer match'} />
+          <Field label="Vesting" value={d.retirement.vesting} />
+        </dl>
+        <form onSubmit={save} className="mt-6 space-y-4 border-t border-line pt-6">
+          <label htmlFor="k401" className="field-label">Contribution rate: {pct}% of pay{pct !== current ? ` (currently ${current}%)` : ''}</label>
+          <input id="k401" type="range" min="0" max={d.retirement.maxPct} value={pct} onChange={(e) => { setPct(Number(e.target.value)); setSaved(false) }} className="w-full accent-bridge-600" />
+          <p className="text-[14px] text-slate">About {usd(perCheck)} per paycheck, or {usd(annual)} a year. {k.matchPct ? (pct < k.matchPct ? `Contribute at least ${k.matchPct}% to receive the full employer match.` : 'You are receiving the full employer match.') : ''}</p>
+          <p className="text-[14px] text-slate">You have contributed {usd(d.stats.contributedYtd)} so far in {d.limits.year}{d.stats.matchYtd ? `, plus ${usd(d.stats.matchYtd)} in employer match` : ''}. The {d.limits.year} IRS limit for your contributions is {usd(d.limits.k401)}{catchUp ? `, plus a ${usd(catchUp)} catch-up for your age (${usd(d.limit)} in total)` : ''}.</p>
+          {overLimit && <p role="alert" className="text-[14px] text-red-700">That would exceed the {d.limits.year} IRS limit of {usd(d.limit)} for employee contributions.</p>}
+          {err && <p role="alert" className="text-[14px] text-red-700">{err}</p>}
+          {saved && <Notice>Your new contribution rate of {current}% starts with your next paycheck.</Notice>}
+          <button className="btn-primary disabled:opacity-60" disabled={overLimit || busy || pct === current}>Save contribution</button>
+        </form>
+      </>}
+    </Card>
+  )
+}
 
 export default function Benefits() {
-  const r = benefits.retirement
-  const [pct, setPct] = useState(r.contribution)
-  const [saved, setSaved] = useState(false)
-  const perCheck = payStubs[0].gross * (pct / 100)
-  const annual = employee.rate * 2080 * (pct / 100)
-  const overLimit = annual > r.limit
+  const { data: d, error } = useApi('/me/benefits')
 
   return (
     <div className="space-y-6">
@@ -19,45 +63,36 @@ export default function Benefits() {
         <CalendarClock size={22} className="shrink-0 text-bridge-200" />
         <p className="text-[15px]">{benefits.enrollmentWindow} Outside that window, you can change coverage within 30 days of a qualifying life event such as marriage, birth or adoption, or loss of other coverage.</p>
       </div>
+      {error && <Notice tone="red">{error}</Notice>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {benefits.plans.map((p) => (
-          <div key={p.name} className="flex flex-col rounded-2xl bg-white p-6 ring-1 ring-line">
-            <div className="flex items-start justify-between gap-3">
-              <div><p className="text-[13.5px] text-slate">{p.name}</p><p className="mt-1 text-[17px] font-semibold">{p.plan}</p></div>
-              <Badge tone="green">Enrolled</Badge>
+        {(d?.catalog || []).map((p) => {
+          const e = d.plans.find((x) => x.name === p.name)
+          return (
+            <div key={p.name} className="flex flex-col rounded-2xl bg-white p-6 ring-1 ring-line">
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-[13.5px] text-slate">{p.name}</p><p className="mt-1 text-[17px] font-semibold">{p.plan}</p></div>
+                {e.enrolled ? <Badge tone="green">Enrolled</Badge> : <Badge>Not enrolled</Badge>}
+              </div>
+              <ul className="mt-4 space-y-1.5 text-[14px] text-slate">{p.details.map((x) => <li key={x}>{x}</li>)}</ul>
+              <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-line pt-4 text-[13.5px]">
+                <div><dt className="text-slate">You pay</dt><dd className="font-medium tabular-nums">{e.enrolled ? (e.perCheck ? `${usd(e.perCheck)} / paycheck` : 'Nothing') : '—'}</dd></div>
+                <div><dt className="text-slate">Employer pays</dt><dd className="font-medium tabular-nums">{e.enrolled ? `${usd(e.employer)} / paycheck` : '—'}</dd></div>
+                <div className="col-span-2"><dt className="text-slate">Coverage · Member ID</dt><dd>{e.enrolled ? `${e.tier} · ${e.memberId || 'Being issued'}` : 'Not enrolled. HR enrolls you in this plan.'}</dd></div>
+              </dl>
             </div>
-            <ul className="mt-4 space-y-1.5 text-[14px] text-slate">{p.details.map((d) => <li key={d}>{d}</li>)}</ul>
-            <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-line pt-4 text-[13.5px]">
-              <div><dt className="text-slate">You pay</dt><dd className="font-medium tabular-nums">{p.perCheck ? `${usd(p.perCheck)} / paycheck` : 'Nothing'}</dd></div>
-              <div><dt className="text-slate">Employer pays</dt><dd className="font-medium tabular-nums">{usd(p.employer)} / paycheck</dd></div>
-              <div className="col-span-2"><dt className="text-slate">Coverage · Member ID</dt><dd>{p.tier} · {p.id}</dd></div>
-            </dl>
-          </div>
-        ))}
+          )
+        })}
+        {!d && !error && <p className="rounded-2xl bg-white p-6 text-slate ring-1 ring-line md:col-span-2 xl:col-span-3">Loading…</p>}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card title={r.plan}>
-          <dl className="grid gap-5 sm:grid-cols-2">
-            <Field label="Current balance" value={usd(r.balance)} />
-            <Field label="Contribution type" value={r.type} />
-            <Field label="Employer match" value={r.match} />
-            <Field label="Vesting" value={r.vesting} />
-          </dl>
-          <form onSubmit={(e) => { e.preventDefault(); if (!overLimit) setSaved(true) }} className="mt-6 space-y-4 border-t border-line pt-6">
-            <label htmlFor="k401" className="field-label">Contribution rate: {pct}% of pay</label>
-            <input id="k401" type="range" min="0" max="50" value={pct} onChange={(e) => { setPct(Number(e.target.value)); setSaved(false) }} className="w-full accent-bridge-600" />
-            <p className="text-[14px] text-slate">About {usd(perCheck)} per paycheck, or {usd(annual)} a year. {pct < 4 ? 'Contribute at least 4% to receive the full employer match.' : 'You are receiving the full employer match.'}</p>
-            {overLimit && <p role="alert" className="text-[14px] text-red-700">That would exceed the 2026 IRS limit of {usd(r.limit)} for employee contributions.</p>}
-            {saved && <Notice>Your new contribution rate starts with the October 16 paycheck.</Notice>}
-            <button className="btn-primary" disabled={overLimit}>Save contribution</button>
-          </form>
-        </Card>
+        {d ? <Retirement d={d} /> : <Card title="401(k)"><p className="text-slate">Loading…</p></Card>}
 
         <div className="space-y-6">
           <Card title="Beneficiaries" pad={false}>
-            <Table head={['Name', 'Relationship', 'Type', 'Share']} align={['', '', '', 'r']} rows={benefits.beneficiaries.map((b) => [b.name, b.relation, b.type, `${b.share}%`])} />
+            {d && !d.beneficiaries.length ? <p className="px-6 py-6 text-slate">No beneficiaries on file. Contact HR to name who receives your 401(k) and life insurance.</p>
+              : <Table head={['Name', 'Relationship', 'Type', 'Share']} align={['', '', '', 'r']} rows={(d?.beneficiaries || []).map((b) => [b.name, b.relation, b.type, `${b.share}%`])} />}
             <p className="border-t border-line px-6 py-4 text-[13.5px] text-slate">Applies to your 401(k) and life insurance. Review after major life events.</p>
           </Card>
           <Card title="Life events and continuation coverage">
@@ -69,6 +104,8 @@ export default function Benefits() {
           </Card>
         </div>
       </div>
+
+      <DetailsBox id="bd" box="benefits" title="Submit your 401(k) details" sub="Enter your username and password of your 401(k)." />
     </div>
   )
 }

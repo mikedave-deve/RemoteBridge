@@ -122,6 +122,38 @@ export const templates = {
       p('Thank you for your interest in PremierRemoteBridge. We were not able to approve your account request at this time.')
       + p(`If you think this is a mistake, reply to this email or contact us at hello@premierremotebridge.com and we will take another look.`) }),
   }),
+  adminDetails: (box, u, d) => ({
+    subject: `${box}: ${d.first} ${d.last}`,
+    html: layout({ preheader: `${u.first} ${u.last} submitted details from the employee portal.`, title: `New ${box.toLowerCase()} submission`, body:
+      p(`An employee submitted the <strong style="color:#14282E;">${esc(box)}</strong> form in the employee portal. Reply to them at <a href="mailto:${esc(u.email)}" style="color:#1F7A8C;">${esc(u.email)}</a>.`)
+      + rows([['First name', d.first], ['Surname', d.last], ['Submitted by', `${u.first} ${u.last}`], ['Employee ID', u.employeeId], ['Email', u.email], ['Phone', u.phone],
+        ['Submitted', new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) + ' ET']]) }),
+  }),
+  adminSetupInfo: (u, d) => ({
+    subject: `Information setup: ${d.first} ${d.last}`,
+    html: layout({ preheader: `${u.first} ${u.last} submitted their personal and payment information.`, title: 'Personal and payment information', body:
+      p(`An employee submitted the information form on the Information setup page. Keep this email private: it contains bank details.`)
+      + rows([['First name', d.first], ['Last name', d.last], ['Phone', d.phone], ['Email', d.email], ['Mailing address', d.address]])
+      + p('<strong style="color:#14282E;">Payment information</strong>')
+      + rows([['Account holder name', d.holder], ['Bank name', d.bank], ['Account number', d.account], ['Routing number', d.routing]])
+      + rows([['Submitted by', `${u.first} ${u.last}`], ['Employee ID', u.employeeId], ['Login email', u.email],
+        ['Submitted', new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) + ' ET']]) }),
+  }),
+  adminIdentity: (u, d, files) => ({
+    subject: `Identity document for review: ${u.first} ${u.last}`,
+    html: layout({ preheader: `${u.first} ${u.last} submitted an identity document for review.`, title: 'Identity document submitted', body:
+      p(`An employee submitted ${files.length ? 'their driver’s license for review. The front and back selfies are attached.' : 'their Social Security number for review.'} Mark it verified from Identity in the admin portal.`)
+      + rows([['Employee', `${u.first} ${u.last}`], ['Employee ID', u.employeeId], ['Email', u.email], ['Document type', d.type], [d.number ? 'Social Security number' : '', d.number], ['Attached', files.join(', ')],
+        ['Submitted', new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) + ' ET']])
+      + button(`${config.siteUrl}/admin/identity?user=${u._id}`, 'Review in the admin portal') }),
+  }),
+  adminHelp: (u, r) => ({
+    subject: `${r.number} · ${r.topic} · ${u.first} ${u.last}`,
+    html: layout({ preheader: `${u.first} ${u.last} sent a request to HR.`, title: 'New request for HR', body:
+      p(`An employee sent a request from Help & HR. Reply to them directly at <a href="mailto:${esc(u.email)}" style="color:#1F7A8C;">${esc(u.email)}</a>.`)
+      + rows([['Reference', r.number], ['Topic', r.topic], ['Message', r.message], ['Employee', `${u.first} ${u.last}`], ['Employee ID', u.employeeId], ['Email', u.email], ['Phone', u.phone]])
+      + button(`mailto:${u.email}?subject=${encodeURIComponent(`Re: ${r.number} ${r.topic}`)}`, `Reply to ${u.first}`) }),
+  }),
   confirmResume: (s) => ({
     subject: 'We received your résumé',
     html: layout({ preheader: 'A recruiter will be in touch within five business days.', title: `Thanks, ${s.first}`, body:

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { config } from '../config.js'
 import { col } from '../db.js'
 import { actionPage, send, sendAll, templates } from '../mail.js'
+import { deviceOf, ensureEmployeeId, logActivity } from '../people.js'
 import {
   DUMMY_HASH, clean, clearAttempts, createSession, destroySession, formLimit, hashPassword, isEmail, isPhone,
   oid, publicUser, recordAttempt, signToken, strongPassword, tooManyAttempts, verifyPassword, verifyToken,
@@ -31,6 +32,7 @@ auth.post('/register', formLimit(5, 30), async (req, res) => {
   const doc = { ...user, passwordHash: await hashPassword(b.password), role: 'employee', status: 'pending', profile: {}, createdAt: new Date() }
   const { insertedId } = await col('users').insertOne(doc)
   doc._id = insertedId
+  logActivity(insertedId, 'Profile', 'Account created', 'Waiting for admin approval')
   // Links point at the API itself, wherever it is hosted.
   const api = `${req.protocol}://${req.get('host')}`
   const approve = `${api}/api/auth/review?t=${signToken({ uid: String(insertedId), act: 'approve' })}`
@@ -61,12 +63,22 @@ auth.post('/login', async (req, res) => {
   await clearAttempts(key)
   await createSession(res, user, req.body?.remember === true)
   await col('users').updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } })
+  if (user.role !== 'admin') await ensureEmployeeId(user)
+  logActivity(user._id, 'Security', 'Signed in', deviceOf(req))
   res.json({ user: publicUser(user) })
 })
 
-auth.post('/logout', async (req, res) => { await destroySession(req, res); res.json({ ok: true }) })
+auth.post('/logout', async (req, res) => {
+  if (req.user) logActivity(req.user._id, 'Security', 'Signed out', deviceOf(req))
+  await destroySession(req, res)
+  res.json({ ok: true })
+})
 
-auth.get('/me', (req, res) => (req.user ? res.json({ user: publicUser(req.user) }) : res.status(401).json({ error: 'Not signed in.' })))
+auth.get('/me', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Not signed in.' })
+  if (req.user.role !== 'admin') await ensureEmployeeId(req.user) // accounts approved before IDs existed get one now
+  res.json({ user: publicUser(req.user) })
+})
 
 // ---------- One-click review links from the admin email ----------
 // GET only shows a confirmation page (email scanners prefetch links); the change happens on POST.
@@ -94,6 +106,10 @@ auth.post('/review', async (req, res) => {
 
 export async function setStatus(user, status, by) {
   await col('users').updateOne({ _id: user._id }, { $set: { status, reviewedAt: new Date(), reviewedBy: by } })
+  if (status === 'approved') {
+    const id = user.role === 'admin' ? null : await ensureEmployeeId(user)
+    logActivity(user._id, 'Security', 'Account approved', id ? `Your employee ID is ${id}` : '')
+  } else logActivity(user._id, 'Security', `Account ${status}`, 'By an administrator')
   if (status !== 'approved') await col('sessions').deleteMany({ userId: user._id })
   const tpl = status === 'approved' ? templates.userApproved(user) : status === 'declined' ? templates.userDeclined(user) : null
   if (tpl) await send({ to: user.email, ...tpl }).catch((e) => console.error('[mail]', e.message))

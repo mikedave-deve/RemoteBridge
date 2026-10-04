@@ -35,6 +35,9 @@ export async function createSession(res, user, remember = false) {
 // In production the website and API may live on different domains, which needs SameSite=None (always with Secure).
 const cookieOpts = () => ({ httpOnly: true, secure: config.isProd, sameSite: config.isProd ? 'none' : 'lax', path: '/' })
 
+/** Hash of the session cookie on this request, to tell "this device" from the others. */
+export const sessionHash = (req) => (req.cookies[COOKIE] ? sha256(req.cookies[COOKIE]) : '')
+
 export async function destroySession(req, res) {
   const token = req.cookies[COOKIE]
   if (token) await col('sessions').deleteOne({ tokenHash: sha256(token) })
@@ -130,4 +133,4 @@ export const strongPassword = (pw, personal = []) => {
     && !personal.filter((p) => p && p.length >= 3).some((p) => lower.includes(p.toLowerCase()))
 }
 export const oid = (id) => (ObjectId.isValid(id) ? new ObjectId(id) : null)
-export const publicUser = (u) => u && ({ id: String(u._id), first: u.first, last: u.last, email: u.email, phone: u.phone, role: u.role, status: u.status, profile: u.profile || {} })
+export const publicUser = (u) => u && ({ id: String(u._id), employeeId: u.employeeId || null, first: u.first, last: u.last, email: u.email, phone: u.phone, role: u.role, status: u.status, profile: u.profile || {}, personal: u.personal || {}, photo: u.photo || '', joinedAt: u.createdAt, approvedAt: u.reviewedAt })

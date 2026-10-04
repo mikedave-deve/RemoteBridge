@@ -6,6 +6,10 @@ import { cookies, cors, hashPassword, loadUser, sameOrigin } from './security.js
 import { auth } from './routes/auth.js'
 import { pub } from './routes/public.js'
 import { admin } from './routes/admin.js'
+import { me } from './routes/me.js'
+import { adminWork, meWork } from './routes/work.js'
+import { adminSupport, meSupport } from './routes/support.js'
+import { adminAccount, meAccount } from './routes/account.js'
 
 checkConfig()
 
@@ -30,6 +34,13 @@ export function createApp() {
 
   app.use('/api/auth', auth)
   app.use('/api/admin', admin)
+  app.use('/api/me', me)
+  app.use('/api/admin', adminWork)
+  app.use('/api/me', meWork)
+  app.use('/api/admin', adminSupport)
+  app.use('/api/me', meSupport)
+  app.use('/api/admin', adminAccount)
+  app.use('/api/me', meAccount)
   app.use('/api', pub)
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found.' }))
@@ -43,6 +54,7 @@ export function createApp() {
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: err.message })
     console.error(err)
     res.status(500).json({ error: 'Something went wrong on our side. Please try again.' })
   })

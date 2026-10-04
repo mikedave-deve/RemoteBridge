@@ -1,7 +1,8 @@
+import { useSyncExternalStore } from 'react'
 import { API_BASE } from './api'
 import { announcements } from '../data/portal'
 
-// Editable site text. Defaults match the built-in copy; the admin portal can override them.
+// Editable site text. Defaults match the built-in copy; values saved on the server override them.
 export const site = {
   heroTitle: 'Work from home for America’s best employers.',
   heroSubtitle: 'PremierRemoteBridge places US-based professionals in fully remote roles: data entry, customer support, bookkeeping, payroll, admin, accounting and more. Real employers, pay on every listing, and a recruiter who replies.',
@@ -11,18 +12,30 @@ export const site = {
   address: '1180 Peachtree St NE, Atlanta, GA 30309',
 }
 
-const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))])
-const get = (path) => fetch(`${API_BASE}/api${path}`, { credentials: 'include' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+let version = 0
+const listeners = new Set()
+const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn) }
+
+/** Components that show site text call this so they re-render if the server sends newer text. */
+export const useSite = () => useSyncExternalStore(subscribe, () => version)
 
 /**
- * Load the editable site text before the first render. The built-in text stays in place
- * if the API is slow or unavailable, so the site always renders.
+ * Fetch the saved site text in the background. The page renders straight away with the built-in
+ * text, so a slow or unreachable API never delays loading (or reloading) any page.
  */
-export async function hydrateSiteData() {
-  const [s] = await Promise.allSettled([withTimeout(get('/settings'), 2500)])
-  if (s.status === 'fulfilled' && s.value.settings) {
-    const { announcements: list, ...rest } = s.value.settings
-    Object.assign(site, rest)
-    if (Array.isArray(list)) announcements.splice(0, announcements.length, ...list)
-  }
+export function hydrateSiteData() {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 8000)
+  fetch(`${API_BASE}/api/settings`, { credentials: 'include', signal: ctrl.signal })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (!data?.settings) return
+      const { announcements: list, ...rest } = data.settings
+      Object.assign(site, rest)
+      if (Array.isArray(list)) announcements.splice(0, announcements.length, ...list)
+      version++
+      listeners.forEach((fn) => fn())
+    })
+    .catch(() => {})
+    .finally(() => clearTimeout(timer))
 }

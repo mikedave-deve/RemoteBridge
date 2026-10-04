@@ -7,7 +7,7 @@ import { enterDelay } from '../Transition'
 import { US_VIEWBOX, US_NATION, US_STATES, US_CITIES } from '../../data/usMap'
 import { categories, jobs } from '../../data/jobs'
 import { portrait } from '../../data/photos'
-import { site } from '../../lib/siteData'
+import { site, useSite } from '../../lib/siteData'
 
 gsap.registerPlugin(MotionPathPlugin)
 
@@ -39,6 +39,7 @@ const timeIn = (tz, d) => new Intl.DateTimeFormat('en-US', { timeZone: tz, hour:
 const hourIn = (tz, d) => Number(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }).format(d))
 
 export default function Hero() {
+  useSite()
   const ref = useRef(null)
   const video = useRef(null)
   const now = useClock()

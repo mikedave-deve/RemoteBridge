@@ -1,15 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Clock, Download, FileText, Package, Search, ShieldCheck, Target, UserRound, Wallet } from 'lucide-react'
-import { activity } from '../../data/portalExtra'
+import { api } from '../../lib/api'
 import { Card, PageHead } from '../ui'
 
 const icons = { Time: Clock, Pay: Wallet, Security: ShieldCheck, 'Time off': CalendarDays, Missions: Target, Documents: FileText, Equipment: Package, Profile: UserRound }
-const types = ['All', ...Object.keys(icons)]
+const when = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(/, (d{1,2}:)/, ' · $1')
 
 export default function Activity() {
   const [type, setType] = useState('All')
   const [q, setQ] = useState('')
-  const list = useMemo(() => activity.filter((a) => (type === 'All' || a.type === type) && `${a.text} ${a.meta}`.toLowerCase().includes(q.trim().toLowerCase())), [type, q])
+  const [activity, setActivity] = useState(null)
+  useEffect(() => {
+    const ctrl = new AbortController()
+    api('/me/activity', { signal: ctrl.signal }).then((d) => setActivity(d.activity.map((a) => ({ ...a, when: when(a.at) })))).catch((e) => { if (e.name !== 'AbortError') setActivity([]) })
+    return () => ctrl.abort()
+  }, [])
+  // Only offer filters for the kinds of events this person actually has.
+  const types = ['All', ...Object.keys(icons).filter((t) => (activity || []).some((a) => a.type === t))]
+  const list = useMemo(() => (activity || []).filter((a) => (type === 'All' || a.type === type) && `${a.text} ${a.meta}`.toLowerCase().includes(q.trim().toLowerCase())), [activity, type, q])
 
   const exportCsv = () => {
     const esc = (v) => `"${String(v).replace(/"/g, '""')}"`
@@ -21,7 +29,7 @@ export default function Activity() {
 
   return (
     <div className="space-y-6">
-      <PageHead title="Activity history" sub="Everything that happened on your account: sign-ins, pay, time, documents and changes to your details."
+      <PageHead title="Activity history" sub="Everything that happened on your account: sign-ins, approvals, missions and changes to your details."
         actions={<button onClick={exportCsv} className="btn-ghost h-11"><Download size={17} /> Export CSV</button>} />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -41,7 +49,7 @@ export default function Activity() {
       <Card pad={false}>
         <ol className="divide-y divide-line">
           {list.map((a, i) => {
-            const Icon = icons[a.type]
+            const Icon = icons[a.type] || ShieldCheck
             return (
               <li key={i} className="flex gap-4 px-6 py-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-bridge-50 text-bridge-700"><Icon size={18} strokeWidth={1.7} /></span>
@@ -56,7 +64,8 @@ export default function Activity() {
               </li>
             )
           })}
-          {list.length === 0 && <li className="px-6 py-10 text-center text-slate">No activity matches your filters.</li>}
+          {!activity && <li className="px-6 py-10 text-center text-slate">Loading…</li>}
+          {activity && list.length === 0 && <li className="px-6 py-10 text-center text-slate">{activity.length ? 'No activity matches your filters.' : 'No activity yet.'}</li>}
         </ol>
       </Card>
 

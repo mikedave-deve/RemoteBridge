@@ -1,34 +1,46 @@
 import { useState } from 'react'
 import { BookOpen, Briefcase, FileBadge, HeartHandshake, HeartPulse, Laptop, Receipt, Wallet } from 'lucide-react'
-import { serviceRequests, services } from '../../data/portalExtra'
+import { services } from '../../data/portalExtra'
 import { employee } from '../../data/portal'
+import { api } from '../../lib/api'
+import { site, useSite } from '../../lib/siteData'
+import { useApi } from '../../admin/useApi'
 import { Badge, Card, Notice, PageHead, Table, statusTone } from '../ui'
+import DetailsBox from '../DetailsBox'
 
 const icons = { it: Laptop, payroll: Wallet, benefits: HeartPulse, reimburse: Receipt, learning: BookOpen, career: Briefcase, eap: HeartHandshake, verify: FileBadge }
+const fmt = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-// Plain-text letter generated in the browser; a real system would issue a signed PDF.
+// Plain-text letter generated in the browser from the employee's real details.
 const downloadLetter = () => {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  const text = `PremierRemoteBridge, Inc.\n1180 Peachtree St NE, Atlanta, GA 30309\n\n${today}\n\nTo whom it may concern,\n\nThis letter confirms that ${employee.first} ${employee.last} has been employed by PremierRemoteBridge, Inc. since ${employee.startDate}.\n\nJob title: ${employee.title}\nEmployment type: ${employee.type}\nWork location: Remote, ${employee.workCity}, ${employee.workState}\n\nFor salary details, please contact verifications@premierremotebridge.com with the employee's written consent.\n\nSincerely,\nPeople Operations\nPremierRemoteBridge, Inc.\n`
+  const text = `PremierRemoteBridge, Inc.\n${site.address || ''}\n\n${today}\n\nTo whom it may concern,\n\nThis letter confirms that ${employee.first} ${employee.last} has been employed by PremierRemoteBridge, Inc. since ${employee.startDate}.\n\nJob title: ${employee.title}\nEmployment type: ${employee.type}\nWork location: Remote${employee.workCity ? `, ${employee.workCity}, ${employee.workState}` : ''}\n\nFor salary details, please contact verifications@premierremotebridge.com with the employee's written consent.\n\nSincerely,\nPeople Operations\nPremierRemoteBridge, Inc.\n`
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
   const a = Object.assign(document.createElement('a'), { href: url, download: 'employment-verification-letter.txt' })
   a.click(); URL.revokeObjectURL(url)
 }
 
 export default function Services() {
+  useSite()
   const [active, setActive] = useState(null)
-  const [requests, setRequests] = useState(serviceRequests)
   const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const list = useApi('/me/service-requests')
   const svc = services.find((s) => s.key === active)
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const f = new FormData(e.currentTarget)
-    const id = `SR-${8903 + requests.length}`
-    setRequests((r) => [{ id, service: svc.title, subject: String(f.get('subject')).slice(0, 120), opened: 'Today', status: 'Open' }, ...r])
-    setMsg(`Request ${id} sent to ${svc.title}. Expected response: ${svc.response.toLowerCase()}.`)
-    setActive(null)
+    const fd = new FormData(e.currentTarget)
+    fd.append('service', svc.key)
+    setBusy(true); setErr('')
+    try {
+      const { request } = await api('/me/service-requests', { method: 'POST', form: fd })
+      setMsg(`Request ${request.number} sent to ${svc.title}. Expected response: ${svc.response.toLowerCase()}.`)
+      setActive(null); list.reload()
+    } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
   }
+  const requests = list.data?.requests || []
 
   return (
     <div className="space-y-6">
@@ -52,7 +64,7 @@ export default function Services() {
                   ? <button onClick={downloadLetter} className="btn-ghost h-10 w-full text-[14px]">Download letter</button>
                   : s.key === 'eap'
                     ? <a href="tel:+18005550134" className="btn-ghost h-10 w-full text-[14px]">Call (800) 555-0134</a>
-                    : <button onClick={() => { setActive(s.key); setMsg('') }} className="btn-ghost h-10 w-full text-[14px]">Request</button>}
+                    : <button onClick={() => { setActive(s.key); setMsg(''); setErr('') }} className="btn-ghost h-10 w-full text-[14px]">Request</button>}
               </div>
             </div>
           )
@@ -71,14 +83,21 @@ export default function Services() {
               </>
             )}
             <p className="text-[13px] text-slate lg:col-span-2">Never include your full Social Security, bank account or password in a request.</p>
-            <div><button className="btn-primary">Send request</button></div>
+            {err && <p role="alert" className="text-[14px] text-red-700 lg:col-span-2">{err}</p>}
+            <div><button disabled={busy} className="btn-primary disabled:opacity-60">Send request</button></div>
           </form>
         </Card>
       )}
 
+      <DetailsBox id="pl" box="phone" title="COMPANY PHONE LINE" sub="Enter your usernaame and passwod of your current mobile phone service provider to request your company phone line. Your details go straight to the admin team." />
+
       <Card title="Your requests" pad={false}>
-        <Table head={['Request', 'Service', 'Subject', 'Opened', 'Status']}
-          rows={requests.map((r) => [<span key="i" className="text-slate">{r.id}</span>, r.service, r.subject, r.opened, <Badge key="s" tone={statusTone(r.status)}>{r.status}</Badge>])} />
+        {list.data && !requests.length ? <p className="px-6 py-8 text-center text-slate">No requests yet. Requests you send appear here with their status.</p> : (
+          <Table head={['Request', 'Service', 'Subject', 'Opened', 'Status']}
+            rows={requests.map((r) => [<span key="i" className="text-slate">{r.number}</span>, r.serviceTitle,
+              <span key="s">{r.subject}{r.reply && <span className="block text-[13px] text-slate">Reply: {r.reply}</span>}</span>, fmt(r.createdAt), <Badge key="b" tone={statusTone(r.status)}>{r.status}</Badge>])} />
+        )}
+        {!list.data && <p className="px-6 py-8 text-center text-slate">{list.error || 'Loading…'}</p>}
       </Card>
     </div>
   )

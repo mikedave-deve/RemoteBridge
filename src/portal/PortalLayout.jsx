@@ -8,15 +8,29 @@ import Logo from '../components/Logo'
 import { announcements, employee, tasks } from '../data/portal'
 import { signOut, useSession } from './session'
 
-// Show the signed-in person's own details on top of the demo portal data.
+const longDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '')
+
+// The signed-in person's real details (set by an admin). Nothing from the demo profile is shown.
 function applyUser(u) {
-  const p = u.profile || {}
+  const p = u.profile || {}, me = u.personal || {}
   Object.assign(employee, {
-    first: u.first, last: u.last, preferred: u.first, email: u.email, phone: u.phone || employee.phone,
-    ...(p.title && { title: p.title }), ...(p.client && { client: p.client }), ...(p.department && { department: p.department }),
-    ...(p.manager && { manager: p.manager }), ...(p.employmentType && { type: p.employmentType }), ...(p.startDate && { startDate: p.startDate }),
-    ...(p.workCity && { workCity: p.workCity }), ...(p.workState && { workState: p.workState }),
+    id: u.employeeId || 'Being assigned', first: u.first, last: u.last, preferred: me.preferred || u.first, email: u.email, phone: u.phone || '',
+    personal: me, dob: me.dob || '', ssnLast4: me.ssnLast4 || '',
+    title: p.title || 'Position not assigned yet', department: p.department || 'Department not assigned yet', client: p.client || '',
+    manager: p.manager || 'Not assigned yet', type: p.employmentType || 'Not set yet', startDate: p.startDate || longDate(u.approvedAt || u.joinedAt),
+    workCity: p.workCity || '', workState: p.workState || '', photo: u.photo || '', joinedAt: u.joinedAt, address: p.address ? [p.address] : [],
+    hasPosition: !!p.title, hasDepartment: !!p.department,
   })
+}
+
+/** Call after the server returns an updated user, so the header, avatar and every page show the change at once. */
+export const updateUser = (user) => window.dispatchEvent(new CustomEvent('prb:user', { detail: user }))
+
+/** Profile picture, or a neutral person icon when there is none. */
+export function Avatar({ className = 'h-8 w-8 rounded-lg', icon = 16 }) {
+  return employee.photo
+    ? <img src={employee.photo} alt="" className={`${className} object-cover`} />
+    : <span className={`${className} grid shrink-0 place-items-center bg-bridge-50 text-bridge-700`} aria-hidden="true"><UserRound size={icon} strokeWidth={1.7} /></span>
 }
 
 const nav = [
@@ -88,9 +102,16 @@ export default function PortalLayout() {
   const timers = useRef({})
 
   const session = useSession()
+  const [fresh, setFresh] = useState(null)
+  useEffect(() => {
+    const on = (e) => setFresh(e.detail)
+    window.addEventListener('prb:user', on)
+    return () => window.removeEventListener('prb:user', on)
+  }, [])
   const leave = useCallback(async (reason) => {
     await signOut()
-    navigate('/login', { replace: true, state: { reason } })
+    if (reason === 'signout') navigate('/', { replace: true })
+    else navigate('/login', { replace: true, state: { reason } })
   }, [navigate])
 
   // Idle timeout: warn one minute before signing out.
@@ -119,7 +140,7 @@ export default function PortalLayout() {
 
   if (session.loading) return <div className="grid min-h-screen place-items-center bg-paper"><span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-bridge-600" aria-label="Loading" /></div>
   if (!session.user) return <Navigate to="/login" replace state={{ next: pathname }} />
-  applyUser(session.user)
+  applyUser(fresh || session.user)
 
   return (
     <div className="min-h-screen bg-paper">
@@ -139,7 +160,7 @@ export default function PortalLayout() {
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-4 border-b border-line bg-paper/95 px-5 backdrop-blur sm:px-8 print:hidden">
           <div className="flex items-center gap-3">
             <button onClick={() => setDrawer(true)} className="grid h-10 w-10 place-items-center rounded-xl ring-1 ring-line lg:hidden" aria-label="Open menu"><Menu size={20} /></button>
-            <p className="hidden text-[14px] text-slate sm:block">{employee.title} · {employee.client} · ID {employee.id}</p>
+            <p className="hidden text-[14px] text-slate sm:block">{[employee.hasPosition && employee.title, employee.hasDepartment && employee.department, `ID ${employee.id}`].filter(Boolean).join(' · ')}</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -158,7 +179,7 @@ export default function PortalLayout() {
             </div>
             <div className="relative">
               <button onClick={() => { setMenu(!menu); setBell(false) }} aria-expanded={menu} className="flex items-center gap-2.5 rounded-xl py-1 pl-1 pr-2.5 ring-1 ring-line hover:bg-white">
-                <img src={employee.photo} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                <Avatar />
                 <span className="hidden text-[14px] font-medium sm:block">{employee.preferred} {employee.last}</span>
                 <ChevronDown size={16} className="text-slate" />
               </button>

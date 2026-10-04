@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Lock, MapPin, ShieldCheck } from 'lucide-react'
 import Logo from './Logo'
 import { gsap, useGSAP } from '../lib/gsap'
-import { site } from '../lib/siteData'
+import { site, useSite } from '../lib/siteData'
 
 const cols = [
   { title: 'Find work', links: [['Browse all jobs', '/jobs'], ['Data entry jobs', '/jobs?dept=Data%20Entry'], ['Customer support jobs', '/jobs?dept=Customer%20Support'], ['Bookkeeping jobs', '/jobs?dept=Bookkeeping'], ['Payroll jobs', '/jobs?dept=Payroll']] },
@@ -14,6 +14,7 @@ const cols = [
 const WORD = 'PremierRemoteBridge'
 
 export default function Footer() {
+  useSite()
   const ref = useRef(null)
   const word = useRef(null)
 

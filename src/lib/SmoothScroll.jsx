@@ -19,6 +19,7 @@ export default function SmoothScroll({ children }) {
   }, [])
 
   useEffect(() => {
+    lenis?.start() // a new page always starts with scrolling enabled
     if (lenis) lenis.scrollTo(0, { immediate: true, force: true })
     else window.scrollTo(0, 0)
     const id = setTimeout(() => {

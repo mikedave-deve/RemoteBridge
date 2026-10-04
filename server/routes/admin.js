@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { col } from '../db.js'
 import { clean, cleanText, isPhone, oid, publicUser, requireAdmin } from '../security.js'
 import { setStatus } from './auth.js'
+import { logActivity, publicMission } from '../people.js'
 import { PUBLIC_SETTINGS } from './public.js'
 
 export const admin = Router()
@@ -34,7 +35,7 @@ admin.get('/users', async (req, res) => {
   res.json({ users: list.map(adminUser) })
 })
 
-const PROFILE = ['title', 'client', 'department', 'manager', 'employmentType', 'payRate', 'startDate', 'workCity', 'workState', 'address', 'notes']
+const PROFILE = ['title', 'client', 'department', 'manager', 'employmentType', 'payRate', 'payFrequency', 'startDate', 'workCity', 'workState', 'address', 'notes']
 admin.patch('/users/:id', async (req, res) => {
   const _id = oid(req.params.id)
   const user = _id && await col('users').findOne({ _id })
@@ -55,6 +56,10 @@ admin.patch('/users/:id', async (req, res) => {
   }
   $set.updatedAt = new Date()
   await col('users').updateOne({ _id }, { $set })
+  const LABELS = { first: 'first name', last: 'last name', phone: 'phone', 'profile.title': 'position', 'profile.client': 'client company', 'profile.department': 'department', 'profile.manager': 'manager', 'profile.employmentType': 'employment type', 'profile.payRate': 'pay rate', 'profile.payFrequency': 'pay frequency','profile.startDate': 'start date', 'profile.workCity': 'work city', 'profile.workState': 'work state', 'profile.address': 'home address' }
+  const old = (k) => (k.startsWith('profile.') ? user.profile?.[k.slice(8)] : user[k]) || ''
+  const changed = Object.keys(LABELS).filter((k) => k in $set && $set[k] !== old(k)).map((k) => LABELS[k])
+  if (changed.length) logActivity(_id, 'Profile', 'Your details were updated by HR', `Changed: ${changed.join(', ')}`)
   res.json({ user: adminUser(await col('users').findOne({ _id })) })
 })
 
@@ -102,4 +107,58 @@ admin.put('/settings', async (req, res) => {
   }
   await col('settings').updateOne({ _id: 'site' }, { $set }, { upsert: true })
   res.json({ settings: await col('settings').findOne({ _id: 'site' }) })
+})
+
+// ---------- Missions & instructions (assigned to one employee each) ----------
+const PRIORITIES = ['High', 'Medium', 'Low']
+const lines = (v) => (Array.isArray(v) ? v : String(v || '').split('\n')).map((x) => clean(x, 300)).filter(Boolean).slice(0, 30)
+const missionInput = (b) => ({
+  title: clean(b.title, 140), client: clean(b.client, 120), priority: PRIORITIES.includes(b.priority) ? b.priority : 'Medium',
+  due: /^\d{4}-\d{2}-\d{2}$/.test(b.due || '') ? b.due : '', summary: cleanText(b.summary, 1500),
+  steps: lines(b.steps), instructions: lines(b.instructions),
+})
+const fmtDue = (d) => new Date(`${d}T12:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+admin.get('/missions', async (req, res) => {
+  const filter = oid(req.query.userId) ? { userId: oid(req.query.userId) } : {}
+  const list = await col('missions').find(filter).sort({ createdAt: -1 }).limit(500).toArray()
+  const users = await col('users').find({ _id: { $in: [...new Set(list.map((m) => String(m.userId)))].map(oid) } }).toArray()
+  const byId = Object.fromEntries(users.map((u) => [String(u._id), u]))
+  res.json({ missions: list.map((m) => publicMission(m, byId[String(m.userId)])) })
+})
+
+admin.post('/missions', async (req, res) => {
+  const b = req.body || {}
+  const user = oid(b.userId) && await col('users').findOne({ _id: oid(b.userId), status: 'approved' })
+  if (!user) return res.status(400).json({ error: 'Choose an approved employee.' })
+  const m = missionInput(b)
+  if (!m.title || !m.steps.length) return res.status(400).json({ error: 'Add a title and at least one step.' })
+  const doc = { ...m, steps: m.steps.map((text) => ({ text, done: false })), userId: user._id, assignedBy: `${req.user.first} ${req.user.last}`, createdAt: new Date(), updatedAt: new Date() }
+  const { insertedId } = await col('missions').insertOne(doc)
+  logActivity(user._id, 'Missions', `New mission assigned: “${m.title}”`, m.due ? `Due ${fmtDue(m.due)}` : `Assigned by ${doc.assignedBy}`)
+  res.json({ mission: publicMission({ ...doc, _id: insertedId }, user) })
+})
+
+admin.patch('/missions/:id', async (req, res) => {
+  const _id = oid(req.params.id)
+  const old = _id && await col('missions').findOne({ _id })
+  if (!old) return res.status(404).json({ error: 'Mission not found.' })
+  const m = missionInput(req.body || {})
+  if (!m.title || !m.steps.length) return res.status(400).json({ error: 'Add a title and at least one step.' })
+  // Keep progress on steps whose text did not change.
+  const prev = new Map(old.steps.map((s) => [s.text, s]))
+  const steps = m.steps.map((text) => prev.get(text) || { text, done: false })
+  await col('missions').updateOne({ _id }, { $set: { ...m, steps, updatedAt: new Date() } })
+  logActivity(old.userId, 'Missions', `Mission updated: “${m.title}”`, 'Check the steps and instructions')
+  const user = await col('users').findOne({ _id: old.userId })
+  res.json({ mission: publicMission({ ...old, ...m, steps }, user) })
+})
+
+admin.delete('/missions/:id', async (req, res) => {
+  const _id = oid(req.params.id)
+  const old = _id && await col('missions').findOne({ _id })
+  if (!old) return res.status(404).json({ error: 'Mission not found.' })
+  await col('missions').deleteOne({ _id })
+  logActivity(old.userId, 'Missions', `Mission removed: “${old.title}”`, 'Removed by an administrator')
+  res.json({ ok: true })
 })

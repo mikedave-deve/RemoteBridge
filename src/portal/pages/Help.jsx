@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { HeartHandshake, Mail, Phone, ShieldAlert } from 'lucide-react'
+import { HeartHandshake, Phone, ShieldAlert } from 'lucide-react'
 import { employee } from '../../data/portal'
+import { api } from '../../lib/api'
 import { Card, Notice, PageHead } from '../ui'
-import { site } from '../../lib/siteData'
+import { site, useSite } from '../../lib/siteData'
 
 const faqs = [
   ['When is payday?', 'Every other Friday by direct deposit. If payday falls on a bank holiday, you are paid the business day before.'],
@@ -13,21 +14,26 @@ const faqs = [
 ]
 
 export default function Help() {
+  useSite()
   const [sent, setSent] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true); setErr('')
+    try {
+      const { number } = await api('/me/help', { method: 'POST', body: Object.fromEntries(new FormData(e.currentTarget)) })
+      setSent(`Request received. Reference ${number}. We will reply to ${employee.email} within one business day.`)
+    } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
+  }
   return (
     <div className="space-y-6">
       <PageHead title="Help & HR" sub="Payroll, benefits, equipment or a workplace concern. A real person replies within one business day." />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <Phone size={20} className="text-bridge-700" />
           <p className="mt-3 font-medium">HR and payroll line</p>
           <p className="text-[14px] text-slate">{site.contactPhone} · Mon–Fri, 8 AM–6 PM ET</p>
-        </div>
-        <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
-          <Mail size={20} className="text-bridge-700" />
-          <p className="mt-3 font-medium">Your recruiter</p>
-          <p className="text-[14px] text-slate">{employee.recruiter} · s.adams@premierremotebridge.com</p>
         </div>
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <HeartHandshake size={20} className="text-bridge-700" />
@@ -39,12 +45,13 @@ export default function Help() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Send a request">
           {sent ? <Notice>{sent}</Notice> : (
-            <form onSubmit={(e) => { e.preventDefault(); setSent(`Request received. Reference HR-${Math.floor(10000 + Math.random() * 89999)}. We will reply to ${employee.email} within one business day.`) }} className="space-y-4">
+            <form onSubmit={submit} className="space-y-4">
               <div><label className="field-label" htmlFor="h-topic">Topic</label>
-                <select id="h-topic" className="field"><option>Payroll and pay stubs</option><option>Benefits and enrollment</option><option>Time off and leave</option><option>Taxes and W-2</option><option>Equipment and IT</option><option>Something else</option></select></div>
-              <div><label className="field-label" htmlFor="h-msg">How can we help?</label><textarea id="h-msg" rows={5} required maxLength={2000} className="field-area" placeholder="Include dates and amounts if your question is about pay." /></div>
+                <select id="h-topic" name="topic" className="field"><option>Payroll and pay stubs</option><option>Benefits and enrollment</option><option>Time off and leave</option><option>Taxes and W-2</option><option>Equipment and IT</option><option>Something else</option></select></div>
+              <div><label className="field-label" htmlFor="h-msg">How can we help?</label><textarea id="h-msg" name="message" rows={5} required maxLength={2000} className="field-area" placeholder="Include dates and amounts if your question is about pay." /></div>
               <p className="text-[13px] text-slate">Never include your full Social Security or bank account number in a message.</p>
-              <button className="btn-primary">Send request</button>
+              {err && <p role="alert" className="text-[14px] text-red-700">{err}</p>}
+              <button disabled={busy} className="btn-primary disabled:opacity-60">Send request</button>
             </form>
           )}
         </Card>

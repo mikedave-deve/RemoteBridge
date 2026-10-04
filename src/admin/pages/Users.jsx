@@ -3,14 +3,15 @@ import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { Search, UserRound, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import { formatPhone } from '../../lib/validate'
+import { FREQUENCIES } from '../../lib/payroll'
 import { Badge, Card, Notice, PageHead, Tabs } from '../../portal/ui'
 import { useApi, when } from '../useApi'
 
 const tone = { pending: 'amber', approved: 'green', declined: 'red', suspended: 'gray' }
 const TABS = ['All', 'Pending', 'Approved', 'Suspended', 'Declined']
 const PROFILE = [
-  ['title', 'Job title'], ['client', 'Client company'], ['department', 'Department'], ['manager', 'Manager'],
-  ['employmentType', 'Employment type'], ['payRate', 'Pay rate'], ['startDate', 'Start date'],
+  ['title', 'Position'], ['client', 'Client company'], ['department', 'Department'], ['manager', 'Manager'],
+  ['employmentType', 'Employment type'], ['payRate', 'Hourly pay rate ($)'], ['payFrequency', 'Pay frequency'], ['startDate', 'Start date'],
   ['workCity', 'Work city'], ['workState', 'Work state'], ['address', 'Home address'],
 ]
 
@@ -36,7 +37,7 @@ function Editor({ user, me, onClose, onSaved }) {
     <Card title={`${user.first} ${user.last}`} action={<button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-mist" aria-label="Close"><X size={16} /></button>}>
       <div className="mb-5 flex flex-wrap items-center gap-2 text-[13.5px] text-slate">
         <Badge tone={tone[user.status]}>{user.status}</Badge>
-        <span>{user.email}</span><span>· joined {when(user.createdAt)}</span>{user.lastLoginAt && <span>· last login {when(user.lastLoginAt)}</span>}
+        {user.employeeId && <span className="font-medium text-ink">ID {user.employeeId}</span>}<span>{user.email}</span><span>· joined {when(user.createdAt)}</span>{user.lastLoginAt && <span>· last login {when(user.lastLoginAt)}</span>}
       </div>
       {!self && (
         <div className="mb-6 flex flex-wrap gap-2">
@@ -53,7 +54,10 @@ function Editor({ user, me, onClose, onSaved }) {
           <select id="u-role" value={f.role} disabled={self} onChange={(e) => setF({ ...f, role: e.target.value })} className="field"><option value="employee">Employee</option><option value="admin">Admin</option></select></div>
         <p className="pt-2 text-[13px] font-semibold uppercase tracking-[0.12em] text-slate sm:col-span-2">Shown in their employee portal</p>
         {PROFILE.map(([k, l]) => (
-          <div key={k} className={k === 'address' ? 'sm:col-span-2' : ''}><label className="field-label" htmlFor={`u-${k}`}>{l}</label><input id={`u-${k}`} value={f.profile[k] || ''} onChange={setP(k)} maxLength={120} className="field" /></div>
+          <div key={k} className={k === 'address' ? 'sm:col-span-2' : ''}><label className="field-label" htmlFor={`u-${k}`}>{l}</label>
+            {k === 'payFrequency'
+              ? <select id={`u-${k}`} value={f.profile[k] || 'Biweekly'} onChange={setP(k)} className="field">{FREQUENCIES.map((x) => <option key={x}>{x}</option>)}</select>
+              : <input id={`u-${k}`} value={f.profile[k] || ''} onChange={setP(k)} maxLength={120} inputMode={k === 'payRate' ? 'decimal' : undefined} className="field" />}</div>
         ))}
         <div className="sm:col-span-2"><label className="field-label" htmlFor="u-notes">Private admin notes</label><textarea id="u-notes" rows={3} value={f.profile.notes || ''} onChange={setP('notes')} maxLength={2000} className="field-area" /></div>
         {msg.text && <div className="sm:col-span-2"><Notice tone={msg.tone}>{msg.text}</Notice></div>}
@@ -95,7 +99,7 @@ export default function Users() {
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-bridge-50 text-bridge-700" aria-hidden="true"><UserRound size={18} strokeWidth={1.7} /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium">{u.first} {u.last} {u.role === 'admin' && <span className="ml-1 text-[12px] font-normal text-bridge-700">Admin</span>}</span>
-                    <span className="block truncate text-[13.5px] text-slate">{u.email}{u.profile?.title ? ` · ${u.profile.title}` : ''}</span>
+                    <span className="block truncate text-[13.5px] text-slate">{[u.employeeId, u.email, u.profile?.title, u.profile?.department].filter(Boolean).join(' · ')}</span>
                   </span>
                   <Badge tone={tone[u.status]}>{u.status}</Badge>
                 </button>

@@ -25,7 +25,11 @@ const P = { Dashboard: portal('Dashboard'), Pay: portal('Pay'), Taxes: portal('T
 // Admin portal: loaded only for admins.
 const AdminLayout = lazy(() => import('./admin/AdminLayout'))
 const admin = (name) => lazy(() => import(`./admin/pages/${name}.jsx`))
-const A = { Overview: admin('Overview'), Users: admin('Users') }
+const A = {
+  Overview: admin('Overview'), Users: admin('Users'), Missions: admin('Missions'), Pay: admin('Pay'), Taxes: admin('Taxes'),
+  Time: admin('Time'), TimeOff: admin('TimeOff'), Benefits: admin('Benefits'), Requests: admin('Requests'), Shipments: admin('Shipments'),
+  Identity: admin('Identity'), Documents: admin('Documents'),
+}
 
 // Warm the page chunks once the browser is idle so navigation stays instant.
 const preload = () => Promise.all([import('./pages/Jobs'), import('./pages/JobDetail'), import('./pages/SubmitResume'), import('./pages/About'), import('./pages/Team'), import('./pages/Auth')])
@@ -59,6 +63,16 @@ export default function App() {
         <Route path="admin" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><AdminLayout /></Suspense>}>
           <Route index element={<A.Overview />} />
           <Route path="users" element={<A.Users />} />
+          <Route path="missions" element={<A.Missions />} />
+          <Route path="pay" element={<A.Pay />} />
+          <Route path="taxes" element={<A.Taxes />} />
+          <Route path="time" element={<A.Time />} />
+          <Route path="time-off" element={<A.TimeOff />} />
+          <Route path="benefits" element={<A.Benefits />} />
+          <Route path="requests" element={<A.Requests />} />
+          <Route path="shipments" element={<A.Shipments />} />
+          <Route path="identity" element={<A.Identity />} />
+          <Route path="documents" element={<A.Documents />} />
         </Route>
         <Route path="portal" element={<Suspense fallback={<div className="min-h-screen bg-paper" />}><PortalLayout /></Suspense>}>
           <Route index element={<P.Dashboard />} />

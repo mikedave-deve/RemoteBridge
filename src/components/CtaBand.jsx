@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { photo } from '../data/photos'
-import { site } from '../lib/siteData'
+import { site, useSite } from '../lib/siteData'
 
 export default function CtaBand() {
+  useSite()
   const ref = useRef(null)
   useGSAP(() => {
     const mm = gsap.matchMedia()

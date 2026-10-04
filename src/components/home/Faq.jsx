@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { gsap, useGSAP } from '../../lib/gsap'
-import { site } from '../../lib/siteData'
+import { site, useSite } from '../../lib/siteData'
 
 export const faqs = [
   ['Do I have to pay anything to apply?', 'No. PremierRemoteBridge is paid by employers. Job seekers never pay a fee, and no legitimate employer on our board will ask you to pay for training, equipment or a background check.'],
@@ -13,6 +13,7 @@ export const faqs = [
 ]
 
 export default function Faq() {
+  useSite()
   const ref = useRef(null)
   const [open, setOpen] = useState(0)
   const { contextSafe } = useGSAP({ scope: ref })
