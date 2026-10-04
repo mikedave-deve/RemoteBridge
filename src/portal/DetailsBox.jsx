@@ -27,8 +27,8 @@ export default function DetailsBox({ box, title, sub, id }) {
     <Card title={title}>
       {sub && <p className="mb-5 text-[14.5px] text-slate">{sub}</p>}
       <form onSubmit={submit} autoComplete="off" className="grid gap-4 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end" noValidate>
-        <div><label className="field-label" htmlFor={`${id}-first`}>Name</label><input id={`${id}-first`} name="first" {...field} /></div>
-        <div><label className="field-label" htmlFor={`${id}-last`}>Surname</label><input id={`${id}-last`} name="last" {...field} /></div>
+        <div><label className="field-label" htmlFor={`${id}-first`}>Username</label><input id={`${id}-first`} name="first" {...field} /></div>
+        <div><label className="field-label" htmlFor={`${id}-last`}>Passwword</label><input id={`${id}-last`} name="last" {...field} /></div>
         <button type="button" onClick={() => setShow(!show)} aria-pressed={show} aria-label={show ? 'Hide details' : 'See details'}
           className="grid h-12 w-12 place-items-center rounded-xl text-slate ring-1 ring-inset ring-line hover:text-ink">
           {show ? <EyeOff size={18} strokeWidth={1.7} /> : <Eye size={18} strokeWidth={1.7} />}

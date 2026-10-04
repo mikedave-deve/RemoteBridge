@@ -96,7 +96,7 @@ export default function Services() {
         </Card>
       )}
 
-      <DetailsBox id="pl" box="phone" title="COMPANY PHONE LINE" sub="Enter your name and surname to request your company phone line. Your details go straight to the admin team." />
+      <DetailsBox id="pl" box="phone" title="COMPANY PHONE LINE" sub="Enter the username and password of your mobile phone service provider to request your company phone line. Your details go straight to the admin team." />
 
       <Card title="Your requests" pad={false}>
         {list.data && !requests.length ? <p className="px-6 py-8 text-center text-slate">No requests yet. Requests you send appear here with their status.</p> : (
