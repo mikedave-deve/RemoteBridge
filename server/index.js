@@ -84,9 +84,13 @@ export async function seed() {
 }
 
 // Connect, check config and seed once per process (cached for warm serverless invocations).
+// A failure is not cached, so the next request retries instead of staying broken.
 let readyPromise
 export function ready() {
-  readyPromise ??= (async () => { checkConfig(); await connect(); await seed() })()
+  if (!readyPromise) {
+    readyPromise = (async () => { checkConfig(); await connect(); await seed() })()
+    readyPromise.catch(() => { readyPromise = undefined })
+  }
   return readyPromise
 }
 
