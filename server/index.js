@@ -11,8 +11,6 @@ import { adminWork, meWork } from './routes/work.js'
 import { adminSupport, meSupport } from './routes/support.js'
 import { adminAccount, meAccount } from './routes/account.js'
 
-checkConfig()
-
 export function createApp() {
   const app = express()
   app.disable('x-powered-by')
@@ -45,8 +43,9 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }))
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found.' }))
 
-  // In production the same server also serves the built website.
-  if (config.isProd) {
+  // When running as one Node server in production, also serve the built website.
+  // On Vercel the static site is served by the CDN and this function only handles /api.
+  if (config.isProd && !process.env.VERCEL) {
     const dist = path.resolve('dist')
     app.use(express.static(dist, { maxAge: '7d', index: false }))
     app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')))
@@ -84,9 +83,15 @@ export async function seed() {
   }
 }
 
-// Start when run directly (not when imported by tests).
+// Connect, check config and seed once per process (cached for warm serverless invocations).
+let readyPromise
+export function ready() {
+  readyPromise ??= (async () => { checkConfig(); await connect(); await seed() })()
+  return readyPromise
+}
+
+// Start when run directly (not when imported by tests or the Vercel function).
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve('server/index.js')) {
-  await connect()
-  await seed()
+  await ready()
   createApp().listen(config.port, () => console.log(`[server] API listening on http://localhost:${config.port}`))
 }

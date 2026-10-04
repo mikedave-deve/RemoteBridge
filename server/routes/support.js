@@ -4,6 +4,7 @@ import multer from 'multer'
 import { config } from '../config.js'
 import { col } from '../db.js'
 import { send, templates } from '../mail.js'
+import { storeFile, streamFile } from '../storage.js'
 import { clean, cleanText, formLimit, oid, requireAdmin, requireUser } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { shippingLabelPdf } from '../pdf.js'
@@ -73,7 +74,7 @@ meSupport.post('/service-requests', formLimit(20, 60), takeFile, async (req, res
     if (!(amount > 0 && amount < 100000)) return res.status(400).json({ error: 'Enter the amount to reimburse.' })
     const type = req.file && fileType(req.file.buffer)
     if (!type) return res.status(400).json({ error: 'Attach the receipt as a PDF, JPG or PNG.' })
-    receipt = { name: clean(req.file.originalname, 120) || 'receipt', type, size: req.file.size, data: req.file.buffer }
+    receipt = await storeFile({ buffer: req.file.buffer, type, name: clean(req.file.originalname, 120) || 'receipt' }, 'receipts')
   }
   const doc = { userId: req.user._id, number: `SR-${8900 + await nextNumber('serviceRequest')}`, service: b.service, subject, details, ...(amount && { amount }), ...(receipt && { receipt }), status: 'Open', createdAt: new Date() }
   const { insertedId } = await col('serviceRequests').insertOne(doc)
@@ -104,8 +105,7 @@ adminSupport.get('/service-requests/:id/receipt', async (req, res) => {
   const _id = oid(req.params.id)
   const r = _id && await col('serviceRequests').findOne({ _id })
   if (!r?.receipt) return res.status(404).json({ error: 'No receipt on this request.' })
-  res.set({ 'Content-Type': r.receipt.type, 'Content-Disposition': `attachment; filename="${r.receipt.name.replace(/[^\w.-]/g, '_')}"`, 'Cache-Control': 'private, no-store' })
-  res.send(r.receipt.data.buffer)
+  try { await streamFile(res, r.receipt) } catch { if (!res.headersSent) res.status(502).json({ error: 'Could not read the file.' }) }
 })
 
 // ======================= Equipment requests =======================

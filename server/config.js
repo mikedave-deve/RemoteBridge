@@ -11,7 +11,10 @@ function dbNameFrom(uri) {
   try { return decodeURIComponent(new URL(uri.replace(/,[^/]+/, '')).pathname.slice(1)) || 'premierremotebridge' } catch { return 'premierremotebridge' }
 }
 
-const origins = list(env.FRONTEND_ORIGIN).length ? list(env.FRONTEND_ORIGIN) : ['http://localhost:5173']
+// On Vercel these are injected automatically, so the app works before FRONTEND_ORIGIN is set.
+const vercelUrls = [env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_URL, env.VERCEL_BRANCH_URL].filter(Boolean).map((h) => `https://${h}`)
+const explicit = list(env.FRONTEND_ORIGIN)
+const origins = [...new Set([...(explicit.length ? explicit : vercelUrls.length ? vercelUrls : ['http://localhost:5173']), ...vercelUrls])]
 const mongoUri = env.MONGODB_URI || 'mongodb://127.0.0.1:27017/premierremotebridge'
 
 export const config = {

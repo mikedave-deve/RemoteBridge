@@ -3,12 +3,20 @@ import { config } from './config.js'
 
 let client
 export let db
+let indexed = false
 
 export async function connect(uri = config.mongoUri) {
-  client = new MongoClient(uri)
-  await client.connect()
+  if (db) return db
+  // Reuse one connection across warm serverless invocations instead of opening a new one each time.
+  globalThis.__prbMongo ??= new MongoClient(uri, { maxPoolSize: 5, serverSelectionTimeoutMS: 10000 }).connect()
+  client = await globalThis.__prbMongo
   db = client.db(config.dbName)
-  await Promise.all([
+  if (!indexed) { await createIndexes(); indexed = true }
+  return db
+}
+
+function createIndexes() {
+  return Promise.all([
     db.collection('users').createIndex({ email: 1 }, { unique: true }),
     db.collection('users').createIndex({ status: 1, createdAt: -1 }),
     db.collection('sessions').createIndex({ tokenHash: 1 }, { unique: true }),
@@ -41,8 +49,9 @@ export async function connect(uri = config.mongoUri) {
     db.collection('loginAttempts').createIndex({ key: 1 }),
     db.collection('loginAttempts').createIndex({ at: 1 }, { expireAfterSeconds: 60 * 60 }),
   ])
-  return db
 }
 
-export const close = () => client?.close()
+export const close = async () => {
+  try { await client?.close() } finally { client = undefined; db = undefined; globalThis.__prbMongo = undefined; indexed = false }
+}
 export const col = (name) => db.collection(name)

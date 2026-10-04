@@ -4,7 +4,8 @@ import { config } from './config.js'
 
 // Email is sent with Hostinger's HTTP Mail API over HTTPS (hosts such as Render block SMTP ports).
 // Without HOSTINGER_API_TOKEN, emails are saved to server/outbox as .html files so you can preview them.
-const OUTBOX = path.resolve('server/outbox')
+// Dev preview of unsent emails. On Vercel the project dir is read-only, so use the writable /tmp.
+const OUTBOX = process.env.VERCEL ? '/tmp/outbox' : path.resolve('server/outbox')
 let mailboxLookup
 
 // The mailbox's resource id never changes while the server runs, so look it up once.

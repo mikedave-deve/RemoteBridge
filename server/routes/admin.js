@@ -4,6 +4,7 @@ import { clean, cleanText, isPhone, oid, publicUser, requireAdmin } from '../sec
 import { setStatus } from './auth.js'
 import { logActivity, publicMission } from '../people.js'
 import { PUBLIC_SETTINGS } from './public.js'
+import { streamFile } from '../storage.js'
 
 export const admin = Router()
 admin.use(requireAdmin)
@@ -89,8 +90,12 @@ admin.patch('/submissions/:id', async (req, res) => {
 admin.get('/submissions/:id/file', async (req, res) => {
   const s = oid(req.params.id) && await col('submissions').findOne({ _id: oid(req.params.id), type: 'resume' })
   if (!s?.file) return res.status(404).json({ error: 'File not found.' })
-  res.set({ 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${s.fileName.replace(/"/g, '')}"`, 'X-Content-Type-Options': 'nosniff' })
-  res.send(s.file.buffer ? Buffer.from(s.file.buffer) : s.file)
+  // Résumés uploaded before the storage change were kept as a raw buffer; new ones are file records.
+  if (!s.file.name && !s.file.url && !s.file.data) {
+    res.set({ 'Content-Type': s.fileType || 'application/octet-stream', 'Content-Disposition': `attachment; filename="${(s.fileName || 'resume').replace(/"/g, '')}"`, 'X-Content-Type-Options': 'nosniff' })
+    return res.send(s.file.buffer ? Buffer.from(s.file.buffer) : s.file)
+  }
+  try { await streamFile(res, s.file) } catch { if (!res.headersSent) res.status(502).json({ error: 'Could not read the file.' }) }
 })
 
 

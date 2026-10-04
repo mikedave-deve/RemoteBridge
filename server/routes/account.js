@@ -9,6 +9,7 @@ import {
 } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { benefitsOf, seal, unseal } from '../work.js'
+import { deleteFile, storeFile, streamFile } from '../storage.js'
 
 export const meAccount = Router()
 meAccount.use(requireUser)
@@ -19,15 +20,14 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const files = (fields) => (req, res, next) => upload.fields(fields)(req, res, (err) => (err ? res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'A file is over 10 MB.' : 'The upload could not be read.' }) : next()))
 const kind = (buf) => { const h = buf.subarray(0, 4).toString('hex'); return h === '25504446' ? 'application/pdf' : h.startsWith('ffd8ff') ? 'image/jpeg' : h === '89504e47' ? 'image/png' : null }
 const ext = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }
-const fileOf = (f, docs = false) => {
+const fileOf = (f, { docs = false, folder = 'uploads' } = {}) => {
   if (!f) return null
   const type = kind(f.buffer)
   if (!type && !docs) return null
-  return { name: clean(f.originalname, 120) || 'file', type: type || 'application/octet-stream', size: f.size, data: f.buffer }
+  return storeFile({ buffer: f.buffer, type: type || 'application/octet-stream', name: clean(f.originalname, 120) || 'file' }, folder)
 }
-const sendFile = (res, file, inline = false) => {
-  res.set({ 'Content-Type': file.type, 'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${file.name.replace(/[^\w.-]/g, '_')}"`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' })
-  res.send(file.data.buffer || file.data)
+const sendFile = async (res, file, inline = false) => {
+  try { await streamFile(res, file, { inline }) } catch { if (!res.headersSent) res.status(502).json({ error: 'Could not read the file.' }) }
 }
 const nowET = () => new Date()
 const fail = (res, error, status = 400) => res.status(status).json({ error })
@@ -156,13 +156,14 @@ meAccount.post('/identity', formLimit(6, 60), files([{ name: 'front', maxCount: 
     mail = templates.adminIdentity(req.user, { type, number: shown }, [])
   } else {
     // Driver's license: a selfie with the front and one with the back.
-    const front = fileOf(req.files?.front?.[0]), back = fileOf(req.files?.back?.[0])
+    const frontF = req.files?.front?.[0], backF = req.files?.back?.[0]
+    const front = await fileOf(frontF, { folder: 'identity' }), back = await fileOf(backF, { folder: 'identity' })
     if (!front) return fail(res, 'Add your front selfie as a JPG, PNG or PDF.')
     if (!back) return fail(res, 'Add your back selfie as a JPG, PNG or PDF.')
     const names = [`front-selfie.${ext[front.type]}`, `back-selfie.${ext[back.type]}`]
     doc = { userId: req.user._id, type, front, back, status: 'Pending review', submittedAt: new Date() }
     mail = templates.adminIdentity(req.user, { type }, names)
-    attachments = [{ filename: names[0], content: front.data, contentType: front.type }, { filename: names[1], content: back.data, contentType: back.type }]
+    attachments = [{ filename: names[0], content: frontF.buffer, contentType: front.type }, { filename: names[1], content: backF.buffer, contentType: back.type }]
   }
   try { await send({ to: config.notifyEmail, ...mail, attachments }) } catch (e) {
     console.error('[mail]', e.message); return fail(res, 'We could not send your documents right now. Please try again in a few minutes.', 502)
@@ -286,7 +287,7 @@ adminAccount.get('/documents', async (req, res) => {
 adminAccount.post('/documents', files([{ name: 'file', maxCount: 1 }]), async (req, res) => {
   const b = req.body || {}
   const name = clean(b.name, 140), category = CATEGORIES.includes(b.category) ? b.category : 'Other'
-  const file = fileOf(req.files?.file?.[0], true)
+  const file = await fileOf(req.files?.file?.[0], { docs: true, folder: 'documents' })
   if (!name) return fail(res, 'Give the document a name.')
   if (!file) return fail(res, 'Attach the file.')
   let userId = null
@@ -303,9 +304,10 @@ adminAccount.post('/documents', files([{ name: 'file', maxCount: 1 }]), async (r
 })
 adminAccount.delete('/documents/:id', async (req, res) => {
   const _id = oid(req.params.id)
-  const r = _id && await col('documents').deleteOne({ _id })
-  if (!r?.deletedCount) return fail(res, 'Document not found.', 404)
+  const d = _id && await col('documents').findOneAndDelete({ _id })
+  if (!d) return fail(res, 'Document not found.', 404)
   await col('docAcks').deleteMany({ docId: _id })
+  await deleteFile(d.file)
   res.json({ ok: true })
 })
 adminAccount.get('/documents/:id/file', async (req, res) => {

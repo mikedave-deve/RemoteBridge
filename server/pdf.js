@@ -5,12 +5,12 @@ import { FORM_BOXES, FORM_NAMES, isMoneyBox } from '../src/lib/taxForms.js'
 
 // PDFs in the website's style: Hanken Grotesk + Newsreader, the teal palette and the two-circle logo mark.
 const C = { ink: '#14282E', slate: '#4A6066', soft: '#6B8086', line: '#D7E2E3', mist: '#EDF3F3', paper: '#F8FAFA', b50: '#EEF6F7', b400: '#4C99A7', b600: '#196676', b700: '#145361', b800: '#0F424D', b950: '#06242B' }
-const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const font = (pkg, file) => path.join(ROOT, 'node_modules', '@fontsource', pkg, 'files', file)
+// Fonts are vendored into server/fonts so they ship with the serverless bundle.
+const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fonts')
 const FONTS = {
-  sans: font('hanken-grotesk', 'hanken-grotesk-latin-400-normal.woff'),
-  semi: font('hanken-grotesk', 'hanken-grotesk-latin-600-normal.woff'),
-  serif: font('newsreader', 'newsreader-latin-400-normal.woff'),
+  sans: path.join(FONT_DIR, 'hanken-grotesk-latin-400-normal.woff'),
+  semi: path.join(FONT_DIR, 'hanken-grotesk-latin-600-normal.woff'),
+  serif: path.join(FONT_DIR, 'newsreader-latin-400-normal.woff'),
 }
 const usd = (n) => (Number(n) || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 const day = (k, opts = { month: 'short', day: 'numeric', year: 'numeric' }) => (k ? new Date(`${k}T12:00:00Z`).toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' }) : '')

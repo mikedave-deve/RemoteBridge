@@ -4,6 +4,7 @@ import { config } from '../config.js'
 import { col } from '../db.js'
 import { send, sendAll, templates } from '../mail.js'
 import { clean, cleanText, formLimit, isEmail, isPhone } from '../security.js'
+import { storeFile } from '../storage.js'
 
 export const pub = Router()
 
@@ -39,7 +40,8 @@ pub.post('/resume', formLimit(5, 30), (req, res, next) => upload.single('resume'
   if (Object.keys(errors).length) return res.status(400).json({ error: 'Please fix the highlighted fields.', fields: errors })
 
   const fileName = clean(f.originalname, 120).replace(/[^\w.\- ]/g, '_')
-  await col('submissions').insertOne({ type: 'resume', ...s, fileName, file: f.buffer, fileType: f.mimetype, size: f.size, status: 'new', createdAt: new Date() })
+  const stored = await storeFile({ buffer: f.buffer, type: f.mimetype, name: fileName }, 'resumes')
+  await col('submissions').insertOne({ type: 'resume', ...s, fileName, file: stored, fileType: f.mimetype, size: f.size, status: 'new', createdAt: new Date() })
   await sendAll([
     send({ to: config.notifyEmail, ...templates.adminResume({ ...s, fileName }), attachments: [{ filename: fileName, content: f.buffer, contentType: f.mimetype }] }),
     send({ to: s.email, ...templates.confirmResume(s) }),

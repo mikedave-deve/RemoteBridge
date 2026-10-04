@@ -5,6 +5,7 @@ import { col } from '../db.js'
 import { clean, cleanText, oid, requireAdmin, requireUser } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { payStubPdf, taxFormPdf } from '../pdf.js'
+import { deleteFile, storeFile, streamFile } from '../storage.js'
 import {
   PUNCH, addDays, benefitsOf, buildWeek, canPunch, clockState, dayKey, depositSplit, fmtDay, isDay, nextNumber, publicAccount,
   publicStub, seal, unseal, weekLabel, weekOf, ytdBefore,
@@ -184,8 +185,7 @@ async function sendForm(res, form, user) {
 }
 async function sendFile(res, form) {
   if (!form?.file) return res.status(404).json({ error: 'No uploaded file for this form.' })
-  res.set({ 'Content-Type': form.file.type, 'Content-Disposition': `attachment; filename="${form.file.name.replace(/[^\w.-]/g, '_')}"`, 'Cache-Control': 'private, no-store' })
-  res.send(form.file.data.buffer)
+  try { await streamFile(res, form.file) } catch { if (!res.headersSent) res.status(502).json({ error: 'Could not read the file.' }) }
 }
 meWork.get('/taxes/:id/pdf', async (req, res) => { const _id = oid(req.params.id); return sendForm(res, _id && await col('taxForms').findOne({ _id, userId: req.user._id }), req.user) })
 meWork.get('/taxes/:id/file', async (req, res) => { const _id = oid(req.params.id); return sendFile(res, _id && await col('taxForms').findOne({ _id, userId: req.user._id })) })
@@ -245,11 +245,11 @@ function formFields(b, type) {
   return { type, year: Number(b.year), issued: isDay(b.issued) ? b.issued : dayKey(), employer: clean(b.employer, 120) || COMPANY, ein: clean(b.ein, 20), employerAddress: clean(b.employerAddress, 160), boxes }
 }
 const takeFile = (req, res, next) => upload.single('file')(req, res, (err) => (err ? res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is over 8 MB.' : 'The upload could not be read.' }) : next()))
-const fileOf = (f) => {
+const fileOf = async (f) => {
   if (!f) return null
   const h = f.buffer.subarray(0, 4).toString('hex')
   const type = h === '25504446' ? 'application/pdf' : h.startsWith('ffd8ff') ? 'image/jpeg' : h === '89504e47' ? 'image/png' : null
-  return type && { name: clean(f.originalname, 120) || 'tax-form', type, size: f.size, data: f.buffer }
+  return type ? storeFile({ buffer: f.buffer, type, name: clean(f.originalname, 120) || 'tax-form' }, 'tax-forms') : null
 }
 
 adminWork.post('/taxes', takeFile, async (req, res) => {
@@ -259,7 +259,7 @@ adminWork.post('/taxes', takeFile, async (req, res) => {
   const f = formFields(req.body, req.body.type)
   if (!(f.year >= 2000 && f.year <= 2100)) return res.status(400).json({ error: 'Enter the tax year.' })
   if (!Object.keys(f.boxes).length) return res.status(400).json({ error: 'Fill in at least one box.' })
-  const file = fileOf(req.file)
+  const file = await fileOf(req.file)
   if (req.file && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
   const doc = { userId: user._id, ...f, ...(file && { file }), createdBy: req.user.email, createdAt: new Date() }
   const { insertedId } = await col('taxForms').insertOne(doc)
@@ -273,8 +273,9 @@ adminWork.patch('/taxes/:id', takeFile, async (req, res) => {
   if (!form) return res.status(404).json({ error: 'Tax form not found.' })
   const f = formFields(req.body, form.type)
   if (!(f.year >= 2000 && f.year <= 2100)) return res.status(400).json({ error: 'Enter the tax year.' })
-  const file = fileOf(req.file)
+  const file = await fileOf(req.file)
   if (req.file && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
+  if (file || req.body.removeFile === 'true') await deleteFile(form.file)
   const update = { $set: { ...f, ...(file && { file }), updatedAt: new Date() }, ...(req.body.removeFile === 'true' && !file && { $unset: { file: '' } }) }
   await col('taxForms').updateOne({ _id }, update)
   logActivity(form.userId, 'Tax', `Your ${f.year} Form ${form.type} was updated`, 'Download the latest copy from Tax forms')
@@ -283,8 +284,9 @@ adminWork.patch('/taxes/:id', takeFile, async (req, res) => {
 
 adminWork.delete('/taxes/:id', async (req, res) => {
   const _id = oid(req.params.id)
-  const r = _id && await col('taxForms').deleteOne({ _id })
-  if (!r?.deletedCount) return res.status(404).json({ error: 'Tax form not found.' })
+  const form = _id && await col('taxForms').findOneAndDelete({ _id })
+  if (!form) return res.status(404).json({ error: 'Tax form not found.' })
+  await deleteFile(form.file)
   res.json({ ok: true })
 })
 adminWork.get('/taxes/:id/pdf', async (req, res) => {
