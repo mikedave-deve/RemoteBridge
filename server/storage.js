@@ -2,12 +2,13 @@ import crypto from 'node:crypto'
 
 // File storage. On Vercel we keep uploaded files in Vercel Blob; everywhere else
 // (local dev, tests) we keep the bytes in MongoDB so nothing extra is needed.
-// Blob URLs are unguessable but public, so sensitive files (identity selfies, tax
-// forms, receipts) are never handed to the browser directly — the server fetches
-// the bytes and streams them through the same authenticated routes as before.
+// The Blob store is private by default, so files are never readable from their URL:
+// the server reads them with the store token and streams them through the same
+// authenticated routes as before. Set BLOB_ACCESS=public only for a public store.
 
 const token = () => process.env.BLOB_READ_WRITE_TOKEN || ''
 export const usingBlob = () => !!token()
+const blobAccess = () => (process.env.BLOB_ACCESS === 'public' ? 'public' : 'private')
 const safeName = (name) => String(name || 'file').replace(/[^\w.\- ]/g, '_').slice(0, 120) || 'file'
 const EXT = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx', 'application/msword': 'doc' }
 const extname = (type, name) => {
@@ -22,7 +23,7 @@ export async function storeFile({ buffer, type, name }, folder = 'uploads') {
   if (usingBlob()) {
     const { put } = await import('@vercel/blob')
     const key = `${folder}/${crypto.randomUUID()}.${extname(type, name)}`
-    const { url } = await put(key, buffer, { access: 'public', contentType: base.type, addRandomSuffix: false, token: token() })
+    const { url } = await put(key, buffer, { access: blobAccess(), contentType: base.type, addRandomSuffix: false, token: token() })
     return { ...base, url, key }
   }
   return { ...base, data: buffer }
@@ -32,9 +33,16 @@ export async function storeFile({ buffer, type, name }, folder = 'uploads') {
 export async function readFile(file) {
   if (!file) return null
   if (file.url) {
-    const r = await fetch(file.url)
-    if (!r.ok) throw new Error(`Blob fetch failed (${r.status})`)
-    return { buffer: Buffer.from(await r.arrayBuffer()), type: file.type, name: file.name }
+    // A plain fetch works for public blobs and local test bases; private blobs need the token.
+    const direct = await fetch(file.url).catch(() => null)
+    if (direct && direct.ok) return { buffer: Buffer.from(await direct.arrayBuffer()), type: file.type, name: file.name }
+    if (usingBlob()) {
+      const { get } = await import('@vercel/blob')
+      const g = await get(file.url, { access: blobAccess(), token: token() })
+      if (!g) throw new Error('Blob not found')
+      return { buffer: Buffer.from(await new Response(g.stream).arrayBuffer()), type: file.type, name: file.name }
+    }
+    throw new Error(`Could not read file (${direct?.status || 'no response'})`)
   }
   const d = file.data
   const buffer = d?.buffer ? Buffer.from(d.buffer) : Buffer.from(d)
@@ -50,16 +58,29 @@ export async function deleteFile(file) {
 }
 
 // ---- Direct browser-to-Blob uploads (files bypass the 4.5 MB function limit) ----
-// A file uploaded by the browser is referenced by its Blob URL. We confirm the URL
-// belongs to our store and sniff the first bytes to verify the real type before saving.
-const BLOB_HOST = /(^|\.)public\.blob\.vercel-storage\.com$/
+// The browser uploads straight to Blob and sends us the URL. We confirm it is a blob
+// in our store, read its first bytes to verify the real type, and check the size.
+const BLOB_HOST = /(^|\.)blob\.vercel-storage\.com$/
 const blobBase = () => (process.env.BLOB_PUBLIC_BASE || '').replace(/\/$/, '')
 const sniffType = (buf) => {
   const h = buf.subarray(0, 4).toString('hex')
   return h === '25504446' ? 'application/pdf' : buf.subarray(0, 3).toString('hex') === 'ffd8ff' ? 'image/jpeg' : h === '89504e47' ? 'image/png' : null
 }
-
 const OFFICE_TYPES = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.ms-excel', 'text/plain', 'text/csv']
+
+// Metadata and first bytes of a blob, via the token (works for private blobs).
+async function blobHead(url) { try { const { head } = await import('@vercel/blob'); return await head(url, { token: token() }) } catch { return null } }
+async function blobFirstBytes(url) {
+  try {
+    const { get } = await import('@vercel/blob')
+    const g = await get(url, { access: blobAccess(), token: token() })
+    if (!g) return null
+    const reader = g.stream.getReader()
+    const { value } = await reader.read()
+    reader.cancel().catch(() => {})
+    return value ? Buffer.from(value) : null
+  } catch { return null }
+}
 
 /** Turn a client-provided Blob reference into a file record, validating origin, type and size. */
 export async function refToFile(fileRef, { allowed, maxBytes = 15 * 1024 * 1024, docs = false } = {}) {
@@ -69,21 +90,30 @@ export async function refToFile(fileRef, { allowed, maxBytes = 15 * 1024 * 1024,
   let u
   try { u = new URL(r.url) } catch { return null }
   const base = blobBase()
-  // Vercel Blob is always https; an explicitly configured base is trusted as the operator set it.
   const okHost = (u.protocol === 'https:' && BLOB_HOST.test(u.hostname)) || (base && r.url.startsWith(base + '/'))
   if (!okHost) return null
-  const size = Number(r.size) || 0
+
+  let firstBytes, size = Number(r.size) || 0, declared = String(r.type || '')
+  // Public blobs and local test bases are readable directly; a private store needs the token.
+  const ranged = await fetch(r.url, { headers: { Range: 'bytes=0-15' } }).catch(() => null)
+  if (ranged && (ranged.ok || ranged.status === 206)) {
+    firstBytes = Buffer.from(await ranged.arrayBuffer())
+  } else if (usingBlob()) {
+    const meta = await blobHead(r.url)
+    if (!meta) return null // head only succeeds for a blob in our store
+    size = meta.size
+    declared = meta.contentType || declared
+    firstBytes = await blobFirstBytes(r.url)
+  }
+  if (!firstBytes) return null
   if (size > maxBytes) return null
-  // Read only the first bytes to verify the real file type.
-  const head = await fetch(r.url, { headers: { Range: 'bytes=0-15' } }).catch(() => null)
-  if (!head || !(head.ok || head.status === 206)) return null
-  const buf = Buffer.from(await head.arrayBuffer())
-  let type = sniffType(buf)
+
+  let type = sniffType(firstBytes)
   if (!type && docs) {
-    // Admin documents may be Office or text files, which don't sniff to one MIME type.
-    const h = buf.subarray(0, 4).toString('hex')
-    const declared = String(r.type || '')
-    if ((h === '504b0304' || h === 'd0cf11e0' || /^text\//.test(declared)) && OFFICE_TYPES.includes(declared)) type = declared
+    // Admin documents may be Office or text files, which don't sniff to one MIME type;
+    // trust the store-verified content type for those.
+    const h = firstBytes.subarray(0, 4).toString('hex')
+    if (((h === '504b0304' || h === 'd0cf11e0') || /^text\//.test(declared)) && OFFICE_TYPES.includes(declared)) type = declared
   }
   if (!type || (allowed && !allowed.includes(type))) return null
   return { name: safeName(r.name), type, size: size || undefined, url: r.url, key: decodeURIComponent(u.pathname.replace(/^\//, '')) }

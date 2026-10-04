@@ -79,8 +79,8 @@ pub.post('/contact', formLimit(5, 30), async (req, res) => {
 })
 
 
-// Tells the browser whether to upload files straight to Vercel Blob or via the server.
-pub.get('/upload/config', (_req, res) => res.json({ blob: usingBlob() }))
+// Tells the browser whether to upload straight to Vercel Blob, and with which access level.
+pub.get('/upload/config', (_req, res) => res.json({ blob: usingBlob(), access: process.env.BLOB_ACCESS === 'public' ? 'public' : 'private' }))
 
 // Issues a short-lived token so the browser can upload one file directly to Blob.
 // Only signed-in users, only the known upload kinds, only PDF/JPG/PNG, up to 15 MB.
