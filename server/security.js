@@ -87,7 +87,11 @@ export function sameOrigin(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next()
   const origin = req.headers.origin
   if (!origin) return next() // same-origin form posts and server-to-server calls
-  return allowedOrigins().has(origin) || origin === `${req.protocol}://${req.headers.host}` ? next() : res.status(403).json({ error: 'Request blocked.' })
+  // Same-origin if the Origin's host matches the request host (protocol-independent, so it
+  // works behind Vercel's proxy where req.protocol may be http); otherwise check the allow-list.
+  let sameHost = false
+  try { sameHost = new URL(origin).host === req.headers.host } catch { sameHost = false }
+  return sameHost || allowedOrigins().has(origin) ? next() : res.status(403).json({ error: 'Request blocked.' })
 }
 
 // ---------- Signed, expiring tokens for links in admin emails ----------
