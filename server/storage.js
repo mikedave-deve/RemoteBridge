@@ -49,6 +49,48 @@ export async function deleteFile(file) {
   }
 }
 
+// ---- Direct browser-to-Blob uploads (files bypass the 4.5 MB function limit) ----
+// A file uploaded by the browser is referenced by its Blob URL. We confirm the URL
+// belongs to our store and sniff the first bytes to verify the real type before saving.
+const BLOB_HOST = /(^|\.)public\.blob\.vercel-storage\.com$/
+const blobBase = () => (process.env.BLOB_PUBLIC_BASE || '').replace(/\/$/, '')
+const sniffType = (buf) => {
+  const h = buf.subarray(0, 4).toString('hex')
+  return h === '25504446' ? 'application/pdf' : buf.subarray(0, 3).toString('hex') === 'ffd8ff' ? 'image/jpeg' : h === '89504e47' ? 'image/png' : null
+}
+
+const OFFICE_TYPES = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.ms-excel', 'text/plain', 'text/csv']
+
+/** Turn a client-provided Blob reference into a file record, validating origin, type and size. */
+export async function refToFile(fileRef, { allowed, maxBytes = 15 * 1024 * 1024, docs = false } = {}) {
+  let r
+  try { r = typeof fileRef === 'string' ? JSON.parse(fileRef) : fileRef } catch { return null }
+  if (!r?.url || typeof r.url !== 'string') return null
+  let u
+  try { u = new URL(r.url) } catch { return null }
+  const base = blobBase()
+  // Vercel Blob is always https; an explicitly configured base is trusted as the operator set it.
+  const okHost = (u.protocol === 'https:' && BLOB_HOST.test(u.hostname)) || (base && r.url.startsWith(base + '/'))
+  if (!okHost) return null
+  const size = Number(r.size) || 0
+  if (size > maxBytes) return null
+  // Read only the first bytes to verify the real file type.
+  const head = await fetch(r.url, { headers: { Range: 'bytes=0-15' } }).catch(() => null)
+  if (!head || !(head.ok || head.status === 206)) return null
+  const buf = Buffer.from(await head.arrayBuffer())
+  let type = sniffType(buf)
+  if (!type && docs) {
+    // Admin documents may be Office or text files, which don't sniff to one MIME type.
+    const h = buf.subarray(0, 4).toString('hex')
+    const declared = String(r.type || '')
+    if ((h === '504b0304' || h === 'd0cf11e0' || /^text\//.test(declared)) && OFFICE_TYPES.includes(declared)) type = declared
+  }
+  if (!type || (allowed && !allowed.includes(type))) return null
+  return { name: safeName(r.name), type, size: size || undefined, url: r.url, key: decodeURIComponent(u.pathname.replace(/^\//, '')) }
+}
+
+export const UPLOAD_TYPES = { image: ['application/pdf', 'image/jpeg', 'image/png'], document: ['application/pdf', 'image/jpeg', 'image/png', ...OFFICE_TYPES] }
+
 /** Stream a stored file to the response with download/inline headers. */
 export async function streamFile(res, file, { inline = false } = {}) {
   const f = await readFile(file)

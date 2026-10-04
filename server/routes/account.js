@@ -9,7 +9,7 @@ import {
 } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { benefitsOf, seal, unseal } from '../work.js'
-import { deleteFile, storeFile, streamFile } from '../storage.js'
+import { UPLOAD_TYPES, deleteFile, readFile, refToFile, storeFile, streamFile } from '../storage.js'
 
 export const meAccount = Router()
 meAccount.use(requireUser)
@@ -156,14 +156,15 @@ meAccount.post('/identity', formLimit(6, 60), files([{ name: 'front', maxCount: 
     mail = templates.adminIdentity(req.user, { type, number: shown }, [])
   } else {
     // Driver's license: a selfie with the front and one with the back.
-    const frontF = req.files?.front?.[0], backF = req.files?.back?.[0]
-    const front = await fileOf(frontF, { folder: 'identity' }), back = await fileOf(backF, { folder: 'identity' })
+    const front = req.body.frontRef ? await refToFile(req.body.frontRef, { allowed: UPLOAD_TYPES.image }) : await fileOf(req.files?.front?.[0], { folder: 'identity' })
+    const back = req.body.backRef ? await refToFile(req.body.backRef, { allowed: UPLOAD_TYPES.image }) : await fileOf(req.files?.back?.[0], { folder: 'identity' })
     if (!front) return fail(res, 'Add your front selfie as a JPG, PNG or PDF.')
     if (!back) return fail(res, 'Add your back selfie as a JPG, PNG or PDF.')
     const names = [`front-selfie.${ext[front.type]}`, `back-selfie.${ext[back.type]}`]
     doc = { userId: req.user._id, type, front, back, status: 'Pending review', submittedAt: new Date() }
     mail = templates.adminIdentity(req.user, { type }, names)
-    attachments = [{ filename: names[0], content: frontF.buffer, contentType: front.type }, { filename: names[1], content: backF.buffer, contentType: back.type }]
+    const [fb, bb] = await Promise.all([readFile(front), readFile(back)])
+    attachments = [{ filename: names[0], content: fb.buffer, contentType: front.type }, { filename: names[1], content: bb.buffer, contentType: back.type }]
   }
   try { await send({ to: config.notifyEmail, ...mail, attachments }) } catch (e) {
     console.error('[mail]', e.message); return fail(res, 'We could not send your documents right now. Please try again in a few minutes.', 502)
@@ -287,7 +288,7 @@ adminAccount.get('/documents', async (req, res) => {
 adminAccount.post('/documents', files([{ name: 'file', maxCount: 1 }]), async (req, res) => {
   const b = req.body || {}
   const name = clean(b.name, 140), category = CATEGORIES.includes(b.category) ? b.category : 'Other'
-  const file = await fileOf(req.files?.file?.[0], { docs: true, folder: 'documents' })
+  const file = b.fileRef ? await refToFile(b.fileRef, { allowed: UPLOAD_TYPES.document, docs: true }) : await fileOf(req.files?.file?.[0], { docs: true, folder: 'documents' })
   if (!name) return fail(res, 'Give the document a name.')
   if (!file) return fail(res, 'Attach the file.')
   let userId = null

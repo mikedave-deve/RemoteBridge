@@ -5,7 +5,7 @@ import { col } from '../db.js'
 import { clean, cleanText, oid, requireAdmin, requireUser } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { payStubPdf, taxFormPdf } from '../pdf.js'
-import { deleteFile, storeFile, streamFile } from '../storage.js'
+import { UPLOAD_TYPES, deleteFile, refToFile, storeFile, streamFile } from '../storage.js'
 import {
   PUNCH, addDays, benefitsOf, buildWeek, canPunch, clockState, dayKey, depositSplit, fmtDay, isDay, nextNumber, publicAccount,
   publicStub, seal, unseal, weekLabel, weekOf, ytdBefore,
@@ -245,7 +245,10 @@ function formFields(b, type) {
   return { type, year: Number(b.year), issued: isDay(b.issued) ? b.issued : dayKey(), employer: clean(b.employer, 120) || COMPANY, ein: clean(b.ein, 20), employerAddress: clean(b.employerAddress, 160), boxes }
 }
 const takeFile = (req, res, next) => upload.single('file')(req, res, (err) => (err ? res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is over 8 MB.' : 'The upload could not be read.' }) : next()))
-const fileOf = async (f) => {
+// A browser Blob reference (production) or a multipart file (dev/fallback).
+const taxFile = async (req) => {
+  if (req.body?.fileRef) return refToFile(req.body.fileRef, { allowed: UPLOAD_TYPES.image })
+  const f = req.file
   if (!f) return null
   const h = f.buffer.subarray(0, 4).toString('hex')
   const type = h === '25504446' ? 'application/pdf' : h.startsWith('ffd8ff') ? 'image/jpeg' : h === '89504e47' ? 'image/png' : null
@@ -259,8 +262,8 @@ adminWork.post('/taxes', takeFile, async (req, res) => {
   const f = formFields(req.body, req.body.type)
   if (!(f.year >= 2000 && f.year <= 2100)) return res.status(400).json({ error: 'Enter the tax year.' })
   if (!Object.keys(f.boxes).length) return res.status(400).json({ error: 'Fill in at least one box.' })
-  const file = await fileOf(req.file)
-  if (req.file && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
+  const file = await taxFile(req)
+  if ((req.file || req.body.fileRef) && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
   const doc = { userId: user._id, ...f, ...(file && { file }), createdBy: req.user.email, createdAt: new Date() }
   const { insertedId } = await col('taxForms').insertOne(doc)
   logActivity(user._id, 'Tax', `Your ${f.year} Form ${f.type} is ready`, 'Download it from Tax forms')
@@ -273,8 +276,8 @@ adminWork.patch('/taxes/:id', takeFile, async (req, res) => {
   if (!form) return res.status(404).json({ error: 'Tax form not found.' })
   const f = formFields(req.body, form.type)
   if (!(f.year >= 2000 && f.year <= 2100)) return res.status(400).json({ error: 'Enter the tax year.' })
-  const file = await fileOf(req.file)
-  if (req.file && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
+  const file = await taxFile(req)
+  if ((req.file || req.body.fileRef) && !file) return res.status(400).json({ error: 'Attach a PDF, JPG or PNG file.' })
   if (file || req.body.removeFile === 'true') await deleteFile(form.file)
   const update = { $set: { ...f, ...(file && { file }), updatedAt: new Date() }, ...(req.body.removeFile === 'true' && !file && { $unset: { file: '' } }) }
   await col('taxForms').updateOne({ _id }, update)

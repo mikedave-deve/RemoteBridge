@@ -4,11 +4,11 @@ import { config } from '../config.js'
 import { col } from '../db.js'
 import { send, sendAll, templates } from '../mail.js'
 import { clean, cleanText, formLimit, isEmail, isPhone } from '../security.js'
-import { storeFile } from '../storage.js'
+import { UPLOAD_TYPES, storeFile, usingBlob } from '../storage.js'
 
 export const pub = Router()
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1, fields: 20 } })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024, files: 1, fields: 20 } })
 // Trust the file's first bytes, not its name: PDF, DOCX (zip) or legacy DOC (OLE).
 const isResume = (buf) => {
   const h = buf.subarray(0, 4).toString('hex')
@@ -17,7 +17,7 @@ const isResume = (buf) => {
 const FIELDS = ['Data Entry', 'Customer Support', 'Bookkeeping', 'Accounting', 'Payroll', 'Administrative', 'Virtual Assistant', 'Healthcare Admin', 'HR & Recruiting', 'Sales', 'IT Support', 'Marketing']
 
 pub.post('/resume', formLimit(5, 30), (req, res, next) => upload.single('resume')(req, res, (err) => {
-  if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is over 8 MB.' : 'The upload could not be read.' })
+  if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is over 4 MB. Please upload a smaller résumé.' : 'The upload could not be read.' })
   next()
 }), async (req, res) => {
   const b = req.body || {}
@@ -66,6 +66,35 @@ pub.post('/contact', formLimit(5, 30), async (req, res) => {
   res.json({ ok: true })
 })
 
+
+// Tells the browser whether to upload files straight to Vercel Blob or via the server.
+pub.get('/upload/config', (_req, res) => res.json({ blob: usingBlob() }))
+
+// Issues a short-lived token so the browser can upload one file directly to Blob.
+// Only signed-in users, only the known upload kinds, only PDF/JPG/PNG, up to 15 MB.
+const UPLOAD_FOLDERS = { identity: 'identity', tax: 'tax-forms', document: 'documents', receipt: 'receipts' }
+pub.post('/upload/token', formLimit(60, 60), async (req, res) => {
+  if (!usingBlob()) return res.status(400).json({ error: 'Direct upload is not enabled.' })
+  try {
+    const { handleUpload } = await import('@vercel/blob/client')
+    const result = await handleUpload({
+      body: req.body,
+      request: { headers: { get: (k) => req.headers[String(k).toLowerCase()] } },
+      onBeforeGenerateToken: async (_pathname, clientPayload) => {
+        if (!req.user) throw new Error('Please log in to upload.')
+        let kind
+        try { kind = JSON.parse(clientPayload || '{}').kind } catch { kind = '' }
+        if (!UPLOAD_FOLDERS[kind]) throw new Error('Unknown upload type.')
+        if ((kind === 'tax' || kind === 'document') && req.user.role !== 'admin') throw new Error('Admins only.')
+        return { allowedContentTypes: kind === 'document' ? UPLOAD_TYPES.document : UPLOAD_TYPES.image, maximumSizeInBytes: 15 * 1024 * 1024, addRandomSuffix: true }
+      },
+      onUploadCompleted: async () => {}, // the browser reports the URL to the create endpoint; no webhook needed
+    })
+    res.json(result)
+  } catch (e) {
+    res.status(400).json({ error: e.message || 'Upload could not be authorized.' })
+  }
+})
 
 export const PUBLIC_SETTINGS = ['heroTitle', 'heroSubtitle', 'ctaTitle', 'contactEmail', 'contactPhone', 'address', 'announcements']
 pub.get('/settings', async (_req, res) => {

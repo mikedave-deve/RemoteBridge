@@ -8,7 +8,9 @@ let indexed = false
 export async function connect(uri = config.mongoUri) {
   if (db) return db
   // Reuse one connection across warm serverless invocations instead of opening a new one each time.
-  globalThis.__prbMongo ??= new MongoClient(uri, { maxPoolSize: 5, serverSelectionTimeoutMS: 10000 }).connect()
+  // One connection per warm instance: serverless functions handle one request at a time,
+  // so a small pool avoids exhausting the database's connection limit under many instances.
+  globalThis.__prbMongo ??= new MongoClient(uri, { maxPoolSize: 1, minPoolSize: 0, serverSelectionTimeoutMS: 10000 }).connect()
   client = await globalThis.__prbMongo
   db = client.db(config.dbName)
   if (!indexed) { await createIndexes(); indexed = true }

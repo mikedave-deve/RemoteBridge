@@ -4,6 +4,7 @@ import { services } from '../../data/portalExtra'
 import { employee } from '../../data/portal'
 import { api } from '../../lib/api'
 import { site, useSite } from '../../lib/siteData'
+import { prepareUpload } from '../../lib/upload'
 import { useApi } from '../../admin/useApi'
 import { Badge, Card, Notice, PageHead, Table, statusTone } from '../ui'
 import DetailsBox from '../DetailsBox'
@@ -31,10 +32,16 @@ export default function Services() {
 
   const submit = async (e) => {
     e.preventDefault()
-    const fd = new FormData(e.currentTarget)
+    const form = e.currentTarget
+    const fd = new FormData(form)
     fd.append('service', svc.key)
     setBusy(true); setErr('')
     try {
+      // Expense reimbursement includes a receipt; send it straight to Blob when available.
+      if (svc.key === 'reimburse' && form.receipt?.files[0]) {
+        const prepared = await prepareUpload(form.receipt.files[0], 'receipt')
+        if (prepared.fileRef) { fd.delete('receipt'); fd.append('fileRef', prepared.fileRef) }
+      }
       const { request } = await api('/me/service-requests', { method: 'POST', form: fd })
       setMsg(`Request ${request.number} sent to ${svc.title}. Expected response: ${svc.response.toLowerCase()}.`)
       setActive(null); list.reload()

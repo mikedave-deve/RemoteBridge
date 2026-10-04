@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Download, Trash2, UploadCloud } from 'lucide-react'
 import { api, fileUrl } from '../../lib/api'
+import { prepareUpload } from '../../lib/upload'
 import { Badge, Card, Notice, PageHead, statusTone } from '../../portal/ui'
 import { useEmployees } from '../EmployeePicker'
 import { useApi, when } from '../useApi'
@@ -20,9 +21,14 @@ export default function Documents() {
     const form = e.currentTarget
     const fd = new FormData(form)
     fd.set('requiresAck', form.ack.checked ? 'true' : 'false')
+    const picked = form.file.files[0]
     setBusy(true)
-    try { await api('/admin/documents', { method: 'POST', form: fd }); form.reset(); setMsg({ text: 'Document uploaded. It is now in the employee’s Documents page.', tone: 'green' }); data.reload() }
-    catch (ex) { setMsg({ text: ex.message, tone: 'red' }) } finally { setBusy(false) }
+    try {
+      // Send the file straight to Blob when available; otherwise it stays in the form as multipart.
+      const prepared = await prepareUpload(picked, 'document')
+      if (prepared.fileRef) { fd.delete('file'); fd.append('fileRef', prepared.fileRef) }
+      await api('/admin/documents', { method: 'POST', form: fd }); form.reset(); setMsg({ text: 'Document uploaded. It is now in the employee’s Documents page.', tone: 'green' }); data.reload()
+    } catch (ex) { setMsg({ text: ex.message, tone: 'red' }) } finally { setBusy(false) }
   }
   const remove = async (d) => {
     if (!window.confirm(`Delete “${d.name}”? Employees will no longer see it.`)) return

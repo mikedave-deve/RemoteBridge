@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BadgeCheck, Clock, FileCheck2, Lock, UploadCloud, X } from 'lucide-react'
 import { api } from '../../lib/api'
+import { appendUpload, prepareUpload } from '../../lib/upload'
 import { useApi } from '../../admin/useApi'
 import { Badge, Card, Field, Notice, PageHead, Table, statusTone } from '../ui'
 
@@ -65,19 +66,22 @@ export default function Identity() {
   }
   const submit = async (e) => {
     e.preventDefault()
-    const f = new FormData()
-    f.append('type', docType)
-    if (isSsn) {
-      if (ssn.replace(/\D/g, '').length !== 9) return setErr('Enter your 9-digit Social Security number.')
-      f.append('number', ssn)
-    } else {
-      if (!front) return setErr('Add your front selfie.')
-      if (!back) return setErr('Add your back selfie.')
-      f.append('front', front); f.append('back', back)
-    }
+    if (isSsn && ssn.replace(/\D/g, '').length !== 9) return setErr('Enter your 9-digit Social Security number.')
+    if (!isSsn && !front) return setErr('Add your front selfie.')
+    if (!isSsn && !back) return setErr('Add your back selfie.')
     setBusy(true); setErr('')
-    try { await api('/me/identity', { method: 'POST', form: f }); setSent(true); setFront(null); setBack(null); setSsn(''); reload() }
-    catch (ex) { setErr(ex.message) } finally { setBusy(false) }
+    try {
+      const f = new FormData()
+      f.append('type', docType)
+      if (isSsn) {
+        f.append('number', ssn)
+      } else {
+        const [upF, upB] = await Promise.all([prepareUpload(front, 'identity'), prepareUpload(back, 'identity')])
+        appendUpload(f, upF, { fileField: 'front', refField: 'frontRef' })
+        appendUpload(f, upB, { fileField: 'back', refField: 'backRef' })
+      }
+      await api('/me/identity', { method: 'POST', form: f }); setSent(true); setFront(null); setBack(null); setSsn(''); reload()
+    } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
   }
 
   const [title, sub] = BANNER[d?.overall || 'Not started']

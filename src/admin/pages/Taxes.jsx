@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Download, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { api, fileUrl } from '../../lib/api'
+import { appendUpload, prepareUpload } from '../../lib/upload'
 import { FORM_BOXES, FORM_NAMES, isMoneyBox } from '../../lib/taxForms'
 import { Card, Field, Notice, PageHead } from '../../portal/ui'
 import EmployeePicker, { useEmployees } from '../EmployeePicker'
@@ -37,9 +38,9 @@ function Editor({ user, form, company, onClose, onSaved }) {
     fd.append('userId', user.id)
     for (const k of ['type', 'year', 'issued', 'employer', 'ein', 'employerAddress']) fd.append(k, f[k] ?? '')
     fd.append('boxes', JSON.stringify(f.boxes))
-    if (file) fd.append('file', file)
     if (removeFile) fd.append('removeFile', 'true')
     try {
+      if (file) appendUpload(fd, await prepareUpload(file, 'tax'), { fileField: 'file', refField: 'fileRef' })
       const r = await api(form ? `/admin/taxes/${form.id}` : '/admin/taxes', { method: form ? 'PATCH' : 'POST', form: fd })
       onSaved(r.form, form ? 'Tax form updated. The employee sees the new copy right away.' : `Form ${f.type} issued. ${user.first} can download it from Tax forms.`)
     } catch (ex) { setErr(ex.message) } finally { setBusy(false) }

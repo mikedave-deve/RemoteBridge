@@ -4,7 +4,7 @@ import multer from 'multer'
 import { config } from '../config.js'
 import { col } from '../db.js'
 import { send, templates } from '../mail.js'
-import { storeFile, streamFile } from '../storage.js'
+import { UPLOAD_TYPES, refToFile, storeFile, streamFile } from '../storage.js'
 import { clean, cleanText, formLimit, oid, requireAdmin, requireUser } from '../security.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { shippingLabelPdf } from '../pdf.js'
@@ -72,9 +72,14 @@ meSupport.post('/service-requests', formLimit(20, 60), takeFile, async (req, res
   if (b.service === 'reimburse') {
     amount = Math.round(Number(b.amount) * 100) / 100
     if (!(amount > 0 && amount < 100000)) return res.status(400).json({ error: 'Enter the amount to reimburse.' })
-    const type = req.file && fileType(req.file.buffer)
-    if (!type) return res.status(400).json({ error: 'Attach the receipt as a PDF, JPG or PNG.' })
-    receipt = await storeFile({ buffer: req.file.buffer, type, name: clean(req.file.originalname, 120) || 'receipt' }, 'receipts')
+    if (b.fileRef) {
+      receipt = await refToFile(b.fileRef, { allowed: UPLOAD_TYPES.image })
+      if (!receipt) return res.status(400).json({ error: 'Attach the receipt as a PDF, JPG or PNG.' })
+    } else {
+      const type = req.file && fileType(req.file.buffer)
+      if (!type) return res.status(400).json({ error: 'Attach the receipt as a PDF, JPG or PNG.' })
+      receipt = await storeFile({ buffer: req.file.buffer, type, name: clean(req.file.originalname, 120) || 'receipt' }, 'receipts')
+    }
   }
   const doc = { userId: req.user._id, number: `SR-${8900 + await nextNumber('serviceRequest')}`, service: b.service, subject, details, ...(amount && { amount }), ...(receipt && { receipt }), status: 'Open', createdAt: new Date() }
   const { insertedId } = await col('serviceRequests').insertOne(doc)
