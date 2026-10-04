@@ -40,8 +40,20 @@ pub.post('/resume', formLimit(5, 30), (req, res, next) => upload.single('resume'
   if (Object.keys(errors).length) return res.status(400).json({ error: 'Please fix the highlighted fields.', fields: errors })
 
   const fileName = clean(f.originalname, 120).replace(/[^\w.\- ]/g, '_')
-  const stored = await storeFile({ buffer: f.buffer, type: f.mimetype, name: fileName }, 'resumes')
-  await col('submissions').insertOne({ type: 'resume', ...s, fileName, file: stored, fileType: f.mimetype, size: f.size, status: 'new', createdAt: new Date() })
+  let stored
+  try {
+    stored = await storeFile({ buffer: f.buffer, type: f.mimetype, name: fileName }, 'resumes')
+  } catch (e) {
+    console.error('[resume] file storage:', e)
+    return res.status(502).json({ error: `We could not save your file. ${/blob/i.test(e.message || '') ? e.message.slice(0, 160) : 'Please try again shortly.'}` })
+  }
+  try {
+    await col('submissions').insertOne({ type: 'resume', ...s, fileName, file: stored, fileType: f.mimetype, size: f.size, status: 'new', createdAt: new Date() })
+  } catch (e) {
+    console.error('[resume] database write:', e)
+    return res.status(503).json({ error: 'We could not save your submission right now. Please try again shortly.' })
+  }
+  // Emails are time-bounded and never throw (sendAll settles), so this can't 500 or hang.
   await sendAll([
     send({ to: config.notifyEmail, ...templates.adminResume({ ...s, fileName }), attachments: [{ filename: fileName, content: f.buffer, contentType: f.mimetype }] }),
     send({ to: s.email, ...templates.confirmResume(s) }),

@@ -10,9 +10,12 @@ let mailboxLookup
 
 // The mailbox's resource id never changes while the server runs, so look it up once.
 // The promise itself is cached so emails sent at the same moment share one lookup; a failure is retried next time.
+// Never let a slow mail API hang a serverless function.
+const MAIL_TIMEOUT = 15000
+
 function resolveMailbox() {
   mailboxLookup ??= (async () => {
-    const res = await fetch(`${config.hostinger.apiBase}/api/v1/me`, { headers: { Authorization: `Bearer ${config.hostinger.apiToken}` } })
+    const res = await fetch(`${config.hostinger.apiBase}/api/v1/me`, { headers: { Authorization: `Bearer ${config.hostinger.apiToken}` }, signal: AbortSignal.timeout(MAIL_TIMEOUT) })
     if (!res.ok) throw new Error(`Hostinger Mail API auth failed (${res.status}): ${await res.text()}`)
     const { data } = await res.json()
     const box = data?.mailboxes?.find((m) => m.address?.toLowerCase() === config.hostinger.mailbox.toLowerCase())
@@ -32,7 +35,7 @@ export async function send({ to, subject, html, text, attachments }) {
       to: [to], displayName: config.hostinger.displayName, subject, html, text: text || toText(html),
       ...(attachments?.length && { attachments: attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString('base64'), contentType: a.contentType || 'application/octet-stream' })) }),
     })
-    const attempt = () => fetch(`${config.hostinger.apiBase}/api/v1/mailboxes/${id}/send`, { method: 'POST', headers: { Authorization: `Bearer ${config.hostinger.apiToken}`, 'Content-Type': 'application/json' }, body })
+    const attempt = () => fetch(`${config.hostinger.apiBase}/api/v1/mailboxes/${id}/send`, { method: 'POST', headers: { Authorization: `Bearer ${config.hostinger.apiToken}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(MAIL_TIMEOUT) })
     let res = await attempt()
     if (!res.ok) { await new Promise((r) => setTimeout(r, 500)); res = await attempt() }
     if (!res.ok) throw new Error(`Hostinger Mail API send failed (${res.status}): ${await res.text()}`)
