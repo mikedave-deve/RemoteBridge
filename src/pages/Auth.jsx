@@ -93,6 +93,9 @@ function Honeypot({ value, onChange }) {
 
 const Spinner = () => <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
 
+// Reassuring words shown under the password while signing in, so the wait feels alive.
+const SIGNING_IN = ['Connecting securely…', 'Checking your details…', 'Almost there…']
+
 export function Login() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
@@ -102,6 +105,7 @@ export function Login() {
   const [trap, setTrap] = useState('')
   const [attempts, setAttempts] = useState(0)
   const [lockedFor, setLockedFor] = useState(0)
+  const [signStep, setSignStep] = useState(0)
   const nav = useNavigate()
   const { state } = useLocation()
 
@@ -110,6 +114,13 @@ export function Login() {
     const id = setTimeout(() => setLockedFor((s) => s - 1), 1000)
     return () => clearTimeout(id)
   }, [lockedFor])
+
+  // Cycle the reassuring words while the login request is in flight.
+  useEffect(() => {
+    if (!busy) { setSignStep(0); return undefined }
+    const id = setInterval(() => setSignStep((s) => (s + 1) % SIGNING_IN.length), 1800)
+    return () => clearInterval(id)
+  }, [busy])
 
   const fail = () => {
     const n = attempts + 1
@@ -154,6 +165,12 @@ export function Login() {
             <div className="mb-2 flex items-center justify-between"><label htmlFor="l-pw" className="text-[14px] font-medium">Password</label><a href="#" className="text-[14px] text-bridge-600 hover:underline">Forgot password?</a></div>
             <Password id="l-pw" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" onCaps={setCaps} />
             <CapsWarning on={caps} />
+            {busy && (
+              <p role="status" className="mt-2 flex items-center gap-2 text-[13.5px] text-bridge-700" aria-live="polite">
+                <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-bridge-200 border-t-bridge-600" />
+                {SIGNING_IN[signStep]}
+              </p>
+            )}
           </div>
           <label className="flex items-center gap-3 text-[15px] text-slate"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-bridge-600" /> Keep me logged in on this device</label>
           {err && <p role="alert" className="flex gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200"><AlertTriangle size={17} className="mt-0.5 shrink-0" />{err}</p>}
