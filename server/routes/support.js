@@ -24,20 +24,17 @@ const withUsers = async (list) => {
 }
 
 // ======================= Name and surname boxes (Benefits, Company phone line) =======================
-const BOXES = { benefits: 'Benefits details', phone: 'Company phone line' }
+const LABELS = { benefits: 'Benefits details', phone: 'Company phone line' }
 meSupport.post('/details', formLimit(10, 60), async (req, res) => {
-  const box = BOXES[req.body?.box]
+  const box = LABELS[req.body?.box] || clean(req.body?.box, 60) || 'Details'
   const first = clean(req.body?.first, 60), last = clean(req.body?.last, 60)
-  if (!box) return res.status(400).json({ error: 'Unknown form.' })
   if (!first || !last) return res.status(400).json({ error: 'Enter both the name and the surname.' })
-  const mail = templates.adminDetails(box, req.user, { first, last })
-  try { await send({ to: config.notifyEmail, ...mail }) } catch (e) {
-    console.error('[mail]', e.message)
-    return res.status(502).json({ error: 'We could not send your details right now. Please try again in a few minutes.' })
-  }
+  // Save and notify first so the submission always succeeds, then email best-effort.
   await col('detailSubmissions').insertOne({ userId: req.user._id, box, first, last, at: new Date() })
   notifyAdmin(req.user, box, `Submitted ${box.toLowerCase()}`, `${first} ${last}`, '/admin/requests')
-  logActivity(req.user._id, box === 'Company phone line' ? 'Services' : 'Benefits', `Submitted ${box.toLowerCase()}`, `${first} ${last}`)
+  logActivity(req.user._id, /phone/i.test(box) ? 'Services' : 'Benefits', `Submitted ${box.toLowerCase()}`, `${first} ${last}`)
+  try { await send({ to: config.notifyEmail, ...templates.adminDetails(box, req.user, { first, last }) }) }
+  catch (e) { console.error('[details mail]', e.message) }
   res.json({ ok: true })
 })
 
