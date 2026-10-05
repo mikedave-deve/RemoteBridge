@@ -159,8 +159,8 @@ export default function Identity() {
             </div>
             {!isSsn && (
               <div className="grid gap-5 sm:grid-cols-2">
-                <Drop label="Front selfie" hint="You holding the front of your license · JPG, PNG or PDF up to 10 MB" file={front} onFile={take(setFront)} error={!!err && !front} />
-                <Drop label="Back selfie" hint="You holding the back of your license · JPG, PNG or PDF up to 10 MB" file={back} onFile={take(setBack)} error={!!err && !back} />
+                <Drop label="ID Front" hint="You holding the front of your license · JPG, PNG or PDF up to 10 MB" file={front} onFile={take(setFront)} error={!!err && !front} />
+                <Drop label="ID Back" hint="You holding the back of your license · JPG, PNG or PDF up to 10 MB" file={back} onFile={take(setBack)} error={!!err && !back} />
               </div>
             )}
             {err && <p role="alert" className="text-[14px] text-red-700">{err}</p>}
