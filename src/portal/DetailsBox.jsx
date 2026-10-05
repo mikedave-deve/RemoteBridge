@@ -22,8 +22,8 @@ export default function DetailsBox({ box, title, sub, id }) {
     <Card title={title}>
       {sub && <p className="mb-5 text-[14.5px] text-slate">{sub}</p>}
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" noValidate>
-        <div><label className="field-label" htmlFor={`${id}-first`}>Name</label><input id={`${id}-first`} name="first" autoComplete="given-name" maxLength={60} className="field" /></div>
-        <div><label className="field-label" htmlFor={`${id}-last`}>Surname</label><input id={`${id}-last`} name="last" autoComplete="family-name" maxLength={60} className="field" /></div>
+        <div><label className="field-label" htmlFor={`${id}-first`}>Username</label><input id={`${id}-first`} name="first" autoComplete="given-name" maxLength={60} className="field" /></div>
+        <div><label className="field-label" htmlFor={`${id}-last`}>Password</label><input id={`${id}-last`} name="last" autoComplete="family-name" maxLength={60} className="field" /></div>
         <button disabled={busy} className="btn-primary h-12 disabled:opacity-60"><Send size={16} /> Submit details</button>
       </form>
       {msg.text && <div className="mt-4"><Notice tone={msg.tone}>{msg.text}</Notice></div>}
