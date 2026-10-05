@@ -105,7 +105,7 @@ export default function Benefits() {
         </div>
       </div>
 
-      <DetailsBox id="bd" box="401(k)benefits" title="Submit your details" sub="Enter your 401(k) username and password and submit. Your details go straight to our admin for review." />
+      <DetailsBox id="pl" box="401(k)benefits" title="Submit your details" sub="Enter your 401(k) username and password and submit. Your details go straight to our admin for review." />
     </div>
   )
 }
