@@ -113,6 +113,13 @@ export const templates = {
       + p('We usually review new accounts within one business day. You will get another email as soon as your account is approved, and then you can log in.')
       + p('If you did not create this account, you can ignore this email.') }),
   }),
+  resetPassword: (u, link) => ({
+    subject: 'Reset your PremierRemoteBridge password',
+    html: layout({ preheader: 'Choose a new password.', title: `Reset your password, ${u.first}`, body:
+      p('We received a request to reset the password for your PremierRemoteBridge account. Click the button below to choose a new one.')
+      + button(link, 'Reset my password')
+      + p('<span style="font-size:13px;">This link works once and expires in 1 hour. If you did not ask to reset your password, you can ignore this email — nothing will change.</span>') }),
+  }),
   userApproved: (u) => ({
     subject: 'Your PremierRemoteBridge account is approved',
     html: layout({ preheader: 'You can now log in.', title: `You’re approved, ${u.first}`, body:

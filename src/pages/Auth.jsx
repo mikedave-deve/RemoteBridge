@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, BadgeCheck, Check, Clock, Eye, EyeOff, Lock, ShieldCheck, X } from 'lucide-react'
 import { api } from '../lib/api'
 import Logo from '../components/Logo'
@@ -162,7 +162,7 @@ export function Login() {
             <input id="l-email" type="email" autoComplete="username" inputMode="email" maxLength={120} value={email} onChange={(e) => setEmail(e.target.value.trim())} className="field" disabled={!!lockedFor} />
           </div>
           <div>
-            <div className="mb-2 flex items-center justify-between"><label htmlFor="l-pw" className="text-[14px] font-medium">Password</label><a href="#" className="text-[14px] text-bridge-600 hover:underline">Forgot password?</a></div>
+            <div className="mb-2 flex items-center justify-between"><label htmlFor="l-pw" className="text-[14px] font-medium">Password</label><Link to="/forgot-password" className="text-[14px] text-bridge-600 hover:underline">Forgot password?</Link></div>
             <Password id="l-pw" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" onCaps={setCaps} />
             <CapsWarning on={caps} />
             {busy && (
@@ -303,6 +303,131 @@ export function Signup() {
         </form>
       )}
       <p className="mt-8 text-center text-[15px] text-slate">Already have an account? <Link to="/login" className="font-medium text-bridge-600 hover:underline">Log in</Link></p>
+    </Shell>
+  )
+}
+
+export function Forgot() {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+  const submit = async (e) => {
+    e.preventDefault()
+    if (busy || !validEmail(email)) return
+    setBusy(true)
+    try { await api('/auth/forgot', { method: 'POST', body: { email: email.trim() } }) } catch { /* always show the same result */ }
+    setSent(true); setBusy(false)
+  }
+  return (
+    <Shell title={sent ? 'Check your email' : 'Reset your password'} image="officeLead"
+      sub={sent ? 'If an account uses that email, we just sent a link to set a new password.' : 'Enter the email you log in with and we will send you a link to set a new password.'}
+      quote={{ q: 'Forgot my password on a Monday, had a new one set in two minutes. Simple.', who: 'Priya Nair, Customer Support, hired 2025 · Austin, TX' }}>
+      {sent ? (
+        <div className="mt-10 rounded-2xl bg-white p-8 ring-1 ring-line">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-bridge-600 text-white"><Check /></span>
+          <p className="mt-5 text-slate">Open the email and click <strong className="font-medium text-ink">Reset my password</strong>. The link expires in 1 hour. If you don’t see it, check your spam folder.</p>
+          <Link to="/login" className="btn-primary mt-6"><ArrowLeft size={16} /> Back to log in</Link>
+        </div>
+      ) : (
+        <form className="relative mt-10" noValidate onSubmit={submit}>
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="f-email" className="field-label">Email</label>
+              <input id="f-email" type="email" autoComplete="email" inputMode="email" maxLength={120} value={email} onChange={(e) => setEmail(e.target.value.trim())} className="field" />
+            </div>
+            <button className="btn-dark h-[52px] w-full text-[16px] disabled:cursor-not-allowed disabled:opacity-60" disabled={busy || !validEmail(email)}>
+              {busy ? <><Spinner /> Sending…</> : <><Lock size={16} /> Send reset link</>}
+            </button>
+          </div>
+        </form>
+      )}
+      <p className="mt-8 text-center text-[15px] text-slate">Remembered it? <Link to="/login" className="font-medium text-bridge-600 hover:underline">Log in</Link></p>
+    </Shell>
+  )
+}
+
+export function Reset() {
+  const [params] = useSearchParams()
+  const token = params.get('token') || ''
+  const [checking, setChecking] = useState(true)
+  const [valid, setValid] = useState(false)
+  const [pw, setPw] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [caps, setCaps] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!token) { setValid(false); setChecking(false); return }
+    api(`/auth/reset?token=${encodeURIComponent(token)}`).then((r) => setValid(!!r.valid)).catch(() => setValid(false)).finally(() => setChecking(false))
+  }, [token])
+
+  const lower = pw.toLowerCase()
+  const checks = [
+    ['At least 8 characters', pw.length >= 8],
+    ['Upper and lower case letters', /[a-z]/.test(pw) && /[A-Z]/.test(pw)],
+    ['A number', /\d/.test(pw)],
+    ['A symbol (e.g. ! @ # $)', /[^A-Za-z0-9]/.test(pw)],
+    ['Not a common password', pw.length > 0 && !COMMON.includes(lower)],
+  ]
+  const strong = checks.every((c) => c[1])
+  const match = confirm.length > 0 && confirm === pw
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (busy || !strong || !match) return
+    setBusy(true); setErr('')
+    try { await api('/auth/reset', { method: 'POST', body: { token, password: pw, confirm } }); setDone(true) }
+    catch (ex) { setErr(ex.message) } finally { setBusy(false) }
+  }
+
+  return (
+    <Shell title={done ? 'Password changed' : 'Set a new password'} image="hallway"
+      sub={done ? 'Your password has been updated. You can log in with it now.' : 'Choose a new password for your PremierRemoteBridge account.'}
+      quote={{ q: 'The portal is the one place I check for pay, time off and documents. Resetting access was painless.', who: 'Darnell Price, Bookkeeper, hired 2026 · Columbus, OH' }}>
+      {done ? (
+        <div className="mt-10 rounded-2xl bg-white p-8 ring-1 ring-line">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-bridge-600 text-white"><Check /></span>
+          <p className="mt-5 text-slate">All set. For your security we signed out your other devices. Log in with your new password.</p>
+          <Link to="/login" className="btn-primary mt-6"><Lock size={16} /> Log in</Link>
+        </div>
+      ) : checking ? (
+        <div className="mt-10 flex items-center gap-3 text-slate"><span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-bridge-600" /> Checking your link…</div>
+      ) : !valid ? (
+        <div className="mt-10 rounded-2xl bg-white p-8 ring-1 ring-line">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-red-100 text-red-700"><AlertTriangle /></span>
+          <p className="mt-5 text-slate">This reset link is invalid, already used or expired. Reset links last one hour — request a fresh one.</p>
+          <Link to="/forgot-password" className="btn-primary mt-6">Request a new link</Link>
+        </div>
+      ) : (
+        <form className="relative mt-10" noValidate onSubmit={submit}>
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="r-pw" className="field-label">New password</label>
+              <Password id="r-pw" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" onCaps={setCaps} describedBy="r-rules" />
+              <CapsWarning on={caps} />
+              <ul id="r-rules" className="mt-3 grid gap-x-4 gap-y-1 text-[13px] sm:grid-cols-2">
+                {checks.map(([l, ok]) => (
+                  <li key={l} className={`flex items-center gap-1.5 ${l.startsWith('Not') ? 'sm:col-span-2' : ''} ${ok ? 'text-bridge-700' : 'text-slate-soft'}`}>
+                    {ok ? <Check size={13} /> : <span className="h-[13px] w-[13px] rounded-full ring-1 ring-inset ring-line" />}{l}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <label htmlFor="r-confirm" className="field-label">Confirm new password</label>
+              <Password id="r-confirm" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" onCaps={setCaps} />
+              {confirm && <p className={`mt-2 flex items-center gap-1.5 text-[13px] ${match ? 'text-bridge-700' : 'text-red-700'}`} aria-live="polite">{match ? <><Check size={14} /> Passwords match</> : <><X size={14} /> Passwords do not match</>}</p>}
+            </div>
+            {err && <p role="alert" className="flex gap-2.5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200"><AlertTriangle size={17} className="mt-0.5 shrink-0" />{err}</p>}
+            <button className="btn-dark h-[52px] w-full text-[16px] disabled:cursor-not-allowed disabled:opacity-60" disabled={busy || !strong || !match}>
+              {busy ? <><Spinner /> Saving…</> : <><Lock size={16} /> Save new password</>}
+            </button>
+          </div>
+        </form>
+      )}
+      <p className="mt-8 text-center text-[15px] text-slate"><Link to="/login" className="font-medium text-bridge-600 hover:underline">Back to log in</Link></p>
     </Shell>
   )
 }

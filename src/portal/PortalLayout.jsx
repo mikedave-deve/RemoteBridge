@@ -62,7 +62,7 @@ const nav = [
 const IDLE_MS = 15 * 60 * 1000
 const WARN_MS = 60 * 1000
 
-function Sidebar({ onNavigate }) {
+function Sidebar({ onNavigate, onSignOut }) {
   return (
     <div className="flex h-full flex-col bg-bridge-950 text-white">
       <div className="flex h-[72px] items-center px-6">
@@ -84,6 +84,9 @@ function Sidebar({ onNavigate }) {
             </ul>
           </div>
         ))}
+        <button onClick={onSignOut} className="mb-4 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[14.5px] text-white/70 transition-colors hover:bg-white/5 hover:text-white">
+          <LogOut size={17} strokeWidth={1.7} /> Log out
+        </button>
       </nav>
       <p className="flex items-center gap-2 border-t border-white/10 px-6 py-3.5 text-[12.5px] text-white/55">
         <ShieldCheck size={14} className="shrink-0" /> Secure session · auto sign-out after 15 min idle
@@ -144,13 +147,13 @@ export default function PortalLayout() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] lg:block print:hidden"><Sidebar /></aside>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] lg:block print:hidden"><Sidebar onSignOut={() => leave('signout')} /></aside>
 
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Portal menu">
           <div className="absolute inset-0 bg-bridge-950/50" onClick={() => setDrawer(false)} />
           <div className="absolute inset-y-0 left-0 w-[280px] shadow-2xl">
-            <Sidebar onNavigate={() => setDrawer(false)} />
+            <Sidebar onNavigate={() => setDrawer(false)} onSignOut={() => leave('signout')} />
             <button onClick={() => setDrawer(false)} className="absolute right-3 top-4 grid h-10 w-10 place-items-center rounded-full text-white hover:bg-white/10" aria-label="Close menu"><X size={20} /></button>
           </div>
         </div>

@@ -57,22 +57,38 @@ export const statusTone = (s) => /approved|complete|verified|on file|signed|ackn
 
 export function Table({ head, rows, align = [] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-left text-[14.5px]">
-        <thead>
-          <tr className="border-b border-line text-[12.5px] uppercase tracking-[0.08em] text-slate">
-            {head.map((h, i) => <th key={h} scope="col" className={`px-6 py-3 font-semibold ${align[i] === 'r' ? 'text-right' : ''}`}>{h}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-b border-line last:border-0 hover:bg-paper">
-              {r.map((c, j) => <td key={j} className={`px-6 py-3.5 text-ink ${align[j] === 'r' ? 'text-right' : ''}`} style={align[j] === 'r' ? { fontVariantNumeric: 'tabular-nums' } : undefined}>{c}</td>)}
+    <>
+      {/* Desktop and tablet: a normal table. */}
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full min-w-[560px] text-left text-[14.5px]">
+          <thead>
+            <tr className="border-b border-line text-[12.5px] uppercase tracking-[0.08em] text-slate">
+              {head.map((h, i) => <th key={h} scope="col" className={`px-6 py-3 font-semibold ${align[i] === 'r' ? 'text-right' : ''}`}>{h}</th>)}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} className="border-b border-line last:border-0 hover:bg-paper">
+                {r.map((c, j) => <td key={j} className={`px-6 py-3.5 text-ink ${align[j] === 'r' ? 'text-right' : ''}`} style={align[j] === 'r' ? { fontVariantNumeric: 'tabular-nums' } : undefined}>{c}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Phone: each row becomes a stacked card so nothing scrolls sideways. */}
+      <ul className="divide-y divide-line sm:hidden">
+        {rows.map((r, i) => (
+          <li key={i} className="space-y-2 px-5 py-4">
+            {r.map((c, j) => (c === null || c === undefined || c === '' ? null : (
+              <div key={j} className="flex items-start justify-between gap-4 text-[14px]">
+                <span className="shrink-0 text-slate">{head[j]}</span>
+                <span className="min-w-0 text-right text-ink" style={align[j] === 'r' ? { fontVariantNumeric: 'tabular-nums' } : undefined}>{c}</span>
+              </div>
+            )))}
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 

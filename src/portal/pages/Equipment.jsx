@@ -43,10 +43,12 @@ export default function Equipment() {
       <PageHead title="Equipment & logistics" sub="Track company equipment on its way to you, or ask IT for help with a device." />
 
       <Card title="Track your equipment">
+        <p className="mb-3 text-[14.5px] text-slate">Enter the tracking number from your equipment email to see where your delivery is.</p>
         <form onSubmit={(e) => { e.preventDefault(); track() }} className="flex flex-col gap-3 sm:flex-row">
           <label className="sr-only" htmlFor="trk">Tracking number</label>
-          <input id="trk" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Enter your tracking number" autoComplete="off" spellCheck={false} className="field flex-1 uppercase placeholder:normal-case" />
-          <button disabled={tracking} className="btn-primary h-12 px-7 disabled:opacity-60"><Search size={17} /> Track</button>
+          <input id="trk" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Enter your tracking number" autoComplete="off" spellCheck={false}
+            className="field h-16 flex-1 rounded-2xl text-[18px] tracking-wide uppercase placeholder:text-[16px] placeholder:normal-case placeholder:tracking-normal" />
+          <button disabled={tracking} className="btn-primary h-16 shrink-0 rounded-2xl px-8 text-[16px] disabled:opacity-60"><Search size={19} /> Track</button>
         </form>
         {trackErr && <p role="alert" className="mt-3 text-[14px] text-red-700">{trackErr}</p>}
         {(mine.data?.shipments || []).length > 0 && (

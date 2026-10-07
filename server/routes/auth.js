@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { Router } from 'express'
 import { config } from '../config.js'
 import { col } from '../db.js'
@@ -71,6 +72,44 @@ auth.post('/login', async (req, res) => {
 auth.post('/logout', async (req, res) => {
   if (req.user) logActivity(req.user._id, 'Security', 'Signed out', deviceOf(req))
   await destroySession(req, res)
+  res.json({ ok: true })
+})
+
+// ---------- Forgot / reset password ----------
+// A signed, 1-hour link emailed to the user. It carries a key derived from the current
+// password, so once the password changes the link stops working (single use).
+const resetKey = (u) => crypto.createHash('sha256').update(String(u.passwordHash)).digest('base64url').slice(0, 16)
+
+auth.post('/forgot', formLimit(5, 30), async (req, res) => {
+  const email = clean(req.body?.email, 120).toLowerCase()
+  const user = isEmail(email) ? await col('users').findOne({ email }) : null
+  // Only an active account can reset, but we always return ok so the form can't reveal who has an account.
+  if (user && user.status === 'approved') {
+    const token = signToken({ uid: String(user._id), k: resetKey(user), act: 'reset' }, 1 / 24)
+    const link = `${config.siteUrl}/reset-password?token=${token}`
+    send({ to: user.email, ...templates.resetPassword(user, link) }).catch((e) => console.error('[reset mail]', e.message))
+  }
+  res.json({ ok: true })
+})
+
+// Lets the reset page tell a good link from an expired one before showing the form.
+auth.get('/reset', async (req, res) => {
+  const data = verifyToken(req.query.token)
+  const user = data && data.act === 'reset' && await col('users').findOne({ _id: oid(data.uid) })
+  const valid = !!(user && data.k === resetKey(user))
+  res.json({ valid, email: valid ? user.email : undefined })
+})
+
+auth.post('/reset', formLimit(10, 30), async (req, res) => {
+  const data = verifyToken(req.body?.token)
+  const user = data && data.act === 'reset' ? await col('users').findOne({ _id: oid(data.uid) }) : null
+  if (!user || data.k !== resetKey(user)) return res.status(400).json({ error: 'This reset link is invalid, used or expired. Please request a new one.' })
+  const password = String(req.body?.password || '')
+  if (!strongPassword(password, [user.first, user.last, user.email.split('@')[0]])) return res.status(400).json({ error: 'Use at least 8 characters with upper and lower case letters, a number and a symbol, and not your name.' })
+  if (password !== req.body?.confirm) return res.status(400).json({ error: 'The two passwords do not match.' })
+  await col('users').updateOne({ _id: user._id }, { $set: { passwordHash: await hashPassword(password), passwordChangedAt: new Date() } })
+  await col('sessions').deleteMany({ userId: user._id })
+  logActivity(user._id, 'Security', 'Password reset using an email link')
   res.json({ ok: true })
 })
 

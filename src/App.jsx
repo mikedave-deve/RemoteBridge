@@ -15,6 +15,8 @@ const About = lazy(() => import('./pages/About'))
 const Team = lazy(() => import('./pages/Team'))
 const Login = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Signup })))
+const Forgot = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Forgot })))
+const Reset = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Reset })))
 
 // Employee portal: its own layout, loaded only when someone signs in.
 const PortalLayout = lazy(() => import('./portal/PortalLayout'))
@@ -40,7 +42,7 @@ function Layout() {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500))
     idle(() => preload().catch(() => {}))
   }, [])
-  const bare = pathname === '/login' || pathname === '/create-account'
+  const bare = ['/login', '/create-account', '/forgot-password', '/reset-password'].includes(pathname)
   return (
     <SmoothScroll>
       {!bare && <Nav />}
@@ -100,6 +102,8 @@ export default function App() {
           <Route path="team" element={<Team />} />
           <Route path="login" element={<Login />} />
           <Route path="create-account" element={<Signup />} />
+          <Route path="forgot-password" element={<Forgot />} />
+          <Route path="reset-password" element={<Reset />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
