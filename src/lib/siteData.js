@@ -8,8 +8,8 @@ export const site = {
   heroSubtitle: 'PremierRemoteBridge places US-based professionals in fully remote roles: data entry, customer support, bookkeeping, payroll, admin, accounting and more. Real employers, pay on every listing, and a recruiter who replies.',
   ctaTitle: 'The best job you have had might be the one you do from home.',
   contactEmail: 'hello@premierremotebridge.com',
-  contactPhone: '(404) 555-0170',
-  address: '1180 Peachtree St NE, Atlanta, GA 30309',
+  contactPhone: '(859) 316-5113',
+  address: '201 E Main St, Lexington, KY 40507',
 }
 
 let version = 0

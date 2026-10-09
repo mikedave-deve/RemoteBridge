@@ -75,7 +75,7 @@ function layout({ preheader, title, body }) {
   ${body}
 </td></tr>
 <tr><td style="padding:28px 36px 32px;border-top:1px solid #D7E2E3;font-family:${SANS};font-size:12.5px;line-height:1.6;color:#6B8086;">
-  PremierRemoteBridge, Inc. · 1180 Peachtree St NE, Atlanta, GA 30309<br>
+  PremierRemoteBridge, Inc. · 201 E Main St, Lexington, KY 40507<br>
   We will never ask for your password or payment by email.
 </td></tr>
 </table></td></tr></table></body></html>`

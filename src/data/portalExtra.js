@@ -130,7 +130,7 @@ export const services = [
   { key: 'reimburse', title: 'Expense reimbursement', desc: 'Home-office stipend, certification fees and approved work expenses.', hours: 'Submit any time', response: 'Paid on the next payroll' },
   { key: 'learning', title: 'Learning & certifications', desc: 'Courses, exam fees and a $1,000 yearly learning budget.', hours: 'Self-service', response: 'Approval within 3 business days' },
   { key: 'career', title: 'Career coaching', desc: 'Talk to your recruiter about raises, promotions or your next role.', hours: 'Book a 30-minute call', response: 'Next available slot' },
-  { key: 'eap', title: 'Employee Assistance Program', desc: 'Free, confidential counseling, legal and financial guidance.', hours: '24/7 · (800) 555-0134', response: 'Immediate' },
+  { key: 'eap', title: 'Employee Assistance Program', desc: 'Free, confidential counseling, legal and financial guidance.', hours: '24/7 · (859) 316-5113', response: 'Immediate' },
   { key: 'verify', title: 'Employment verification', desc: 'Proof of employment and income for a lender or landlord.', hours: 'Instant letter download', response: 'Immediate' },
 ]
 

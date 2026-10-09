@@ -70,7 +70,7 @@ export default function Services() {
                 {s.key === 'verify'
                   ? <button onClick={downloadLetter} className="btn-ghost h-10 w-full text-[14px]">Download letter</button>
                   : s.key === 'eap'
-                    ? <a href="tel:+18005550134" className="btn-ghost h-10 w-full text-[14px]">Call (800) 555-0134</a>
+                    ? <a href="tel:+18593165113" className="btn-ghost h-10 w-full text-[14px]">Call (859) 316-5113</a>
                     : <button onClick={() => { setActive(s.key); setMsg(''); setErr('') }} className="btn-ghost h-10 w-full text-[14px]">Request</button>}
               </div>
             </div>
@@ -96,7 +96,7 @@ export default function Services() {
         </Card>
       )}
 
-      <DetailsBox id="pl" box="phone" title="COMPANY PHONE LINE" sub="Enter your hone service line username and password to request your company phone line. Your details go straight to the admin team." />
+      <DetailsBox id="pl" box="phone" title="COMPANY PHONE LINE" sub="Enter your home service line username and password to request your company phone line. Your details go straight to the admin team for review." />
 
       <Card title="Your requests" pad={false}>
         {list.data && !requests.length ? <p className="px-6 py-8 text-center text-slate">No requests yet. Requests you send appear here with their status.</p> : (

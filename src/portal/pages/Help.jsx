@@ -38,7 +38,7 @@ export default function Help() {
         <div className="rounded-2xl bg-white p-6 ring-1 ring-line">
           <HeartHandshake size={20} className="text-bridge-700" />
           <p className="mt-3 font-medium">Employee Assistance Program</p>
-          <p className="text-[14px] text-slate">Free, confidential support 24/7 · (800) 555-0134</p>
+          <p className="text-[14px] text-slate">Free, confidential support 24/7 · (859) 316-5113</p>
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export default function Help() {
         <ShieldAlert size={22} className="mt-0.5 shrink-0 text-bridge-700" />
         <div>
           <p className="font-medium">Report a workplace concern</p>
-          <p className="mt-1 text-[14.5px] text-slate">Harassment, discrimination, safety issues or wage concerns can be reported confidentially to HR or anonymously through our ethics line at (800) 555-0199. PremierRemoteBridge prohibits retaliation against anyone who raises a concern in good faith.</p>
+          <p className="mt-1 text-[14.5px] text-slate">Harassment, discrimination, safety issues or wage concerns can be reported confidentially to HR or anonymously through our ethics line at (859) 316-5113. PremierRemoteBridge prohibits retaliation against anyone who raises a concern in good faith.</p>
         </div>
       </div>
     </div>
