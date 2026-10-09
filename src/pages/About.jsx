@@ -43,8 +43,8 @@ function Contact() {
           <h2 data-split className="text-[clamp(38px,4.4vw,60px)] tracking-tightest">Talk to our hiring team</h2>
           <p data-fade className="mt-6 text-[17px] leading-relaxed text-slate">Tell us about the role. A partner from the right recruiting team will reply within one business day with a proposed approach, timeline and flat fee.</p>
           <dl data-fade className="mt-10 space-y-5 text-[16px]">
-            <div><dt className="text-slate">Employers</dt><dd className="font-medium"><a className="link-u" href="mailto:hire@premierremotebridge.com">hire@premierremotebridge.com</a></dd></div>
-            <div><dt className="text-slate">Professionals</dt><dd className="font-medium"><a className="link-u" href="mailto:talent@premierremotebridge.com">talent@premierremotebridge.com</a></dd></div>
+            <div><dt className="text-slate">Employers</dt><dd className="font-medium"><a className="link-u" href="mailto:info@premierremotebridge.com">info@premierremotebridge.com</a></dd></div>
+            <div><dt className="text-slate">Professionals</dt><dd className="font-medium"><a className="link-u" href="mailto:info@premierremotebridge.com">info@premierremotebridge.com</a></dd></div>
             <div><dt className="text-slate">Offices</dt><dd className="font-medium">Atlanta, New York, Chicago, Dallas, Denver</dd></div>
           </dl>
         </div>

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Lock, MapPin, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Lock, MapPin, Phone, ShieldCheck } from 'lucide-react'
 import Logo from './Logo'
 import { gsap, useGSAP } from '../lib/gsap'
 import { site, useSite } from '../lib/siteData'
@@ -72,6 +72,7 @@ export default function Footer() {
             </p>
             <ul className="mt-7 space-y-2.5 text-[14px]">
               <li className="flex items-center gap-2.5"><MapPin size={16} className="text-bridge-200" /> {site.address}</li>
+              <li className="flex items-center gap-2.5"><Phone size={16} className="text-bridge-200" /> <a href="tel:+18593165113" className="hover:text-white">(859) 316-5113</a></li>
               <li className="flex items-center gap-2.5"><ShieldCheck size={16} className="text-bridge-200" /> SOC 2 Type II · E-Verify participant</li>
               <li className="flex items-center gap-2.5"><Lock size={16} className="text-bridge-200" /> Your data is stored in the United States</li>
             </ul>
