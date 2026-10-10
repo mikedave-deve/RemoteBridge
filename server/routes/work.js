@@ -2,7 +2,8 @@ import crypto from 'node:crypto'
 import { Router } from 'express'
 import multer from 'multer'
 import { col } from '../db.js'
-import { clean, cleanText, oid, requireAdmin, requireUser } from '../security.js'
+import { clean, cleanText, formLimit, oid, requireAdmin, requireUser, signToken, verifyToken } from '../security.js'
+import { send, templates } from '../mail.js'
 import { logActivity, notifyAdmin } from '../people.js'
 import { payStubPdf, taxFormPdf } from '../pdf.js'
 import { UPLOAD_TYPES, deleteFile, refToFile, storeFile, streamFile } from '../storage.js'
@@ -52,9 +53,61 @@ async function makeStub(user, b, excludeId) {
   return { input, calc, ytd, ben }
 }
 
+// Money available to transfer: net pay posted to the employee, minus transfers already sent.
+async function payBalance(user, stubs) {
+  stubs ||= await col('payStubs').find({ userId: user._id }).toArray()
+  const earned = r2(stubs.reduce((s, x) => s + (x.net || 0), 0))
+  const transfers = await col('payTransfers').find({ userId: user._id, status: 'completed' }).toArray()
+  const sent = r2(transfers.reduce((s, x) => s + (x.amount || 0), 0))
+  return { earned, sent, available: r2(Math.max(0, earned - sent)) }
+}
+const publicTransfer = (t) => ({ id: String(t._id), reference: t.reference, amount: t.amount, accountLabel: t.accountLabel, status: t.status, createdAt: t.createdAt })
+const maskEmail = (e) => { const [n, d] = String(e).split('@'); return n.length <= 2 ? `${n}•••@${d}` : `${n.slice(0, 2)}${'•'.repeat(Math.min(6, Math.max(1, n.length - 2)))}@${d}` }
+const transferCode = () => String(crypto.randomInt(0, 1e6)).padStart(6, '0')
+const hashCode = (code) => crypto.createHash('sha256').update(`transfer:${code}`).digest('base64url')
+
 meWork.get('/pay', async (req, res) => {
   const stubs = await col('payStubs').find({ userId: req.user._id }).sort({ payDate: -1, createdAt: -1 }).toArray()
-  res.json({ stubs: stubs.map(publicStub), accounts: (req.user.bank || []).map(publicAccount), pay: payInfo(req.user) })
+  const transfers = await col('payTransfers').find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(20).toArray()
+  res.json({ stubs: stubs.map(publicStub), accounts: (req.user.bank || []).map(publicAccount), pay: payInfo(req.user), balance: await payBalance(req.user, stubs), transfers: transfers.map(publicTransfer) })
+})
+
+// Step 1: email a 6-digit code to the employee's own address. Nothing moves yet; the signed
+// token carries only a hash of the code and the pending amount, so the server stays stateless.
+meWork.post('/pay/transfer/start', formLimit(8, 15), async (req, res) => {
+  const amount = r2(num(req.body?.amount))
+  const account = (req.user.bank || []).find((a) => a.id === req.body?.accountId)
+  if (!account) return res.status(400).json({ error: 'Choose a bank account to transfer to.' })
+  if (account.status !== 'Verified') return res.status(400).json({ error: 'That account is still pending verification. You can transfer once payroll verifies it.' })
+  if (!(amount > 0)) return res.status(400).json({ error: 'Enter how much you want to transfer.' })
+  const { available } = await payBalance(req.user)
+  if (amount > available) return res.status(400).json({ error: `You can transfer up to ${usd(available)}.` })
+  const code = transferCode()
+  const accountLabel = `${account.type} ••••${account.last4}`
+  const token = signToken({ uid: String(req.user._id), act: 'transfer', amount, accountId: account.id, ch: hashCode(code) }, 15 / 1440)
+  try { await send({ to: req.user.email, ...templates.transferCode(req.user, { code, amount: usd(amount), account: accountLabel }) }) }
+  catch (e) { console.error('[mail]', e.message); return res.status(502).json({ error: 'We could not email your confirmation code right now. Please try again in a few minutes.' }) }
+  logActivity(req.user._id, 'Pay', 'Requested a transfer to your bank', `${usd(amount)} → ${accountLabel} · code emailed`)
+  res.json({ token, amount, account: accountLabel, sentTo: maskEmail(req.user.email) })
+})
+
+// Step 2: the employee types the emailed code. We re-check the balance, then record the transfer.
+meWork.post('/pay/transfer/confirm', formLimit(12, 15), async (req, res) => {
+  const data = verifyToken(req.body?.token)
+  if (!data || data.act !== 'transfer' || String(data.uid) !== String(req.user._id)) return res.status(400).json({ error: 'This transfer expired before you confirmed it. Please start it again.' })
+  const code = String(req.body?.code || '').replace(/\D/g, '')
+  if (code.length !== 6 || hashCode(code) !== data.ch) return res.status(400).json({ error: 'That confirmation code is not correct. Check the code we emailed you and try again.' })
+  const account = (req.user.bank || []).find((a) => a.id === data.accountId)
+  if (!account || account.status !== 'Verified') return res.status(400).json({ error: 'That account can no longer receive a transfer.' })
+  const amount = r2(data.amount)
+  const { available } = await payBalance(req.user)
+  if (amount > available) return res.status(400).json({ error: `Your available balance changed. You can transfer up to ${usd(available)}.` })
+  const accountLabel = `${account.type} ••••${account.last4}`
+  const doc = { userId: req.user._id, amount, accountId: account.id, accountLabel, status: 'completed', reference: `TR-${Date.now().toString(36).toUpperCase()}`, createdAt: new Date() }
+  const { insertedId } = await col('payTransfers').insertOne(doc)
+  logActivity(req.user._id, 'Pay', 'Transferred money to your bank', `${usd(amount)} → ${accountLabel}`)
+  notifyAdmin(req.user, 'Pay', 'Transferred available pay to their bank', `${usd(amount)} → ${accountLabel}`, '/admin/pay')
+  res.json({ transfer: publicTransfer({ ...doc, _id: insertedId }), balance: await payBalance(req.user) })
 })
 
 meWork.get('/pay/:id/pdf', async (req, res) => {

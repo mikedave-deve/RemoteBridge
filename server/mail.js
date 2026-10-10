@@ -84,6 +84,7 @@ function layout({ preheader, title, body }) {
 const p = (t) => `<p style="margin:0 0 16px;font-family:${SANS};font-size:16px;line-height:1.6;color:#4A6066;">${t}</p>`
 const button = (href, label, dark = true) => `<a href="${esc(href)}" style="display:inline-block;margin:6px 8px 18px 0;padding:13px 26px;border-radius:999px;font-family:${SANS};font-size:15px;font-weight:600;text-decoration:none;${dark ? 'background:#1F7A8C;color:#ffffff;' : 'background:#ffffff;color:#14282E;border:1px solid #D7E2E3;'}">${esc(label)}</a>`
 const rows = (pairs) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;border:1px solid #D7E2E3;border-radius:12px;border-collapse:separate;">${pairs.filter(([, v]) => v).map(([k, v], i) => `<tr><td style="padding:11px 16px;${i ? 'border-top:1px solid #D7E2E3;' : ''}font-family:${SANS};font-size:13.5px;color:#6B8086;width:38%;vertical-align:top;">${esc(k)}</td><td style="padding:11px 16px;${i ? 'border-top:1px solid #D7E2E3;' : ''}font-family:${SANS};font-size:14.5px;color:#14282E;">${esc(v).replace(/\n/g, '<br>')}</td></tr>`).join('')}</table>`
+const codeBox = (code) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;"><tr><td align="center" style="padding:22px;border:1px solid #D7E2E3;border-radius:14px;background:#F4F8F8;"><div style="font-family:${SANS};font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6B8086;margin-bottom:10px;">Your confirmation code</div><div style="font-family:${SANS};font-size:38px;font-weight:700;letter-spacing:0.3em;color:#06242B;">${esc(code)}</div></td></tr></table>`
 
 export const templates = {
   adminResume: (s) => ({
@@ -119,6 +120,14 @@ export const templates = {
       p('We received a request to reset the password for your PremierRemoteBridge account. Click the button below to choose a new one.')
       + button(link, 'Reset my password')
       + p('<span style="font-size:13px;">This link works once and expires in 1 hour. If you did not ask to reset your password, you can ignore this email — nothing will change.</span>') }),
+  }),
+  transferCode: (u, d) => ({
+    subject: 'Your transfer confirmation code',
+    html: layout({ preheader: `Your transfer confirmation code is ${d.code}.`, title: 'Confirm your transfer', body:
+      p(`Hi ${esc(u.first)}, use the code below to confirm your transfer of <strong style="color:#14282E;">${esc(d.amount)}</strong> to ${esc(d.account)}.`)
+      + codeBox(d.code)
+      + rows([['Amount', d.amount], ['To account', d.account]])
+      + p('<span style="font-size:13px;">This code expires in 15 minutes and can be used once. If you did not request this transfer, do not share this code — no one from PremierRemoteBridge will ever ask you for it.</span>') }),
   }),
   userApproved: (u) => ({
     subject: 'Your PremierRemoteBridge account is approved',
