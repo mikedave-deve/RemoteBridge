@@ -116,7 +116,18 @@ auth.post('/reset', formLimit(10, 30), async (req, res) => {
 auth.get('/me', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not signed in.' })
   if (req.user.role !== 'admin') await ensureEmployeeId(req.user) // accounts approved before IDs existed get one now
-  res.json({ user: publicUser(req.user) })
+  const impersonating = req.session?.impersonatedBy ? { adminEmail: req.session.adminEmail || '' } : null
+  res.json({ user: publicUser(req.user), impersonating })
+})
+
+// End an admin "log in as employee" session and restore the admin's own session.
+auth.post('/stop-impersonating', async (req, res) => {
+  if (!req.user || !req.session?.impersonatedBy) return res.status(400).json({ error: 'You are not viewing another account.' })
+  const admin = await col('users').findOne({ _id: req.session.impersonatedBy, role: 'admin' })
+  await col('sessions').deleteOne({ tokenHash: req.session.tokenHash })
+  if (!admin || admin.status !== 'approved') { await destroySession(req, res); return res.status(400).json({ error: 'Your admin account is no longer available. Please log in again.' }) }
+  await createSession(res, admin)
+  res.json({ user: publicUser(admin) })
 })
 
 // ---------- One-click review links from the admin email ----------

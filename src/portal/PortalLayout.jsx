@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import Logo from '../components/Logo'
 import { announcements, employee, tasks } from '../data/portal'
-import { signOut, useSession } from './session'
+import { signOut, stopImpersonating, useSession } from './session'
 
 const longDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '')
 
@@ -145,8 +145,16 @@ export default function PortalLayout() {
   if (!session.user) return <Navigate to="/login" replace state={{ next: pathname }} />
   applyUser(fresh || session.user)
 
+  const backToAdmin = async () => { try { await stopImpersonating() } catch { /* ignore */ } window.location.assign('/admin/users') }
+
   return (
     <div className="min-h-screen bg-paper">
+      {session.impersonating && (
+        <div className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-2 text-center text-[13.5px] font-medium text-amber-950 print:hidden">
+          <span>Admin view — you’re signed in as {session.user.first} {session.user.last}.</span>
+          <button onClick={backToAdmin} className="rounded-full bg-amber-950 px-3 py-1 text-[13px] font-semibold text-amber-50 hover:bg-amber-900">Return to admin</button>
+        </div>
+      )}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] lg:block print:hidden"><Sidebar onSignOut={() => leave('signout')} /></aside>
 
       {drawer && (

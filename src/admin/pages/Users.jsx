@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
-import { Search, UserRound, X } from 'lucide-react'
+import { Copy, KeyRound, LogIn, Search, UserRound, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import { formatPhone } from '../../lib/validate'
 import { FREQUENCIES } from '../../lib/payroll'
@@ -19,8 +19,23 @@ function Editor({ user, me, onClose, onSaved }) {
   const [f, setF] = useState(() => ({ first: user.first, last: user.last, phone: user.phone || '', role: user.role, profile: { ...user.profile } }))
   const [msg, setMsg] = useState({ text: '', tone: 'green' })
   const [busy, setBusy] = useState(false)
+  const [cred, setCred] = useState(null) // the one-time temporary password after a reset
   const self = user.id === me.id
   const setP = (k) => (e) => setF((s) => ({ ...s, profile: { ...s.profile, [k]: e.target.value } }))
+
+  const impersonate = async () => {
+    if (!window.confirm(`Log in as ${user.first} ${user.last}? You'll see their employee portal. Use “Return to admin” to come back.`)) return
+    setBusy(true); setMsg({ text: '', tone: 'green' })
+    try { await api(`/admin/users/${user.id}/impersonate`, { method: 'POST' }); window.location.assign('/portal') }
+    catch (ex) { setMsg({ text: ex.message, tone: 'red' }); setBusy(false) }
+  }
+
+  const resetPassword = async () => {
+    if (!window.confirm(`Set a new temporary password for ${user.first} ${user.last}? Their current password will stop working and they will be signed out.`)) return
+    setBusy(true); setMsg({ text: '', tone: 'green' })
+    try { const c = await api(`/admin/users/${user.id}/password`, { method: 'POST' }); setCred(c) }
+    catch (ex) { setMsg({ text: ex.message, tone: 'red' }) } finally { setBusy(false) }
+  }
 
   const save = async (e) => {
     e.preventDefault(); setBusy(true)
@@ -44,6 +59,26 @@ function Editor({ user, me, onClose, onSaved }) {
           {user.status !== 'approved' && <button disabled={busy} onClick={() => status('approved')} className="btn-primary h-10 px-4 text-[14px]">{user.status === 'pending' ? 'Approve' : 'Reactivate'}</button>}
           {user.status === 'pending' && <button disabled={busy} onClick={() => status('declined')} className="btn-ghost h-10 px-4 text-[14px]">Decline</button>}
           {user.status === 'approved' && <button disabled={busy} onClick={() => status('suspended')} className="btn-ghost h-10 px-4 text-[14px] text-red-700">Suspend access</button>}
+          <button disabled={busy} onClick={resetPassword} className="btn-ghost h-10 px-4 text-[14px]"><KeyRound size={15} /> Set new password</button>
+          {user.status === 'approved' && <button disabled={busy} onClick={impersonate} className="btn-ghost h-10 px-4 text-[14px]"><LogIn size={15} /> Log in as this employee</button>}
+        </div>
+      )}
+      {cred && (
+        <div className="mb-6 rounded-xl bg-bridge-50 p-4 ring-1 ring-bridge-100">
+          <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-bridge-800">Login details for this employee</p>
+          <dl className="mt-3 space-y-2 text-[14.5px]">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-slate">Email (login)</dt>
+              <dd className="flex items-center gap-2"><span className="font-mono text-ink">{cred.email}</span>
+                <button type="button" onClick={() => navigator.clipboard?.writeText(cred.email)} className="text-bridge-700 hover:text-bridge-800" aria-label="Copy email"><Copy size={15} /></button></dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-slate">Temporary password</dt>
+              <dd className="flex items-center gap-2"><span className="select-all font-mono text-[16px] font-semibold text-ink">{cred.password}</span>
+                <button type="button" onClick={() => navigator.clipboard?.writeText(cred.password)} className="text-bridge-700 hover:text-bridge-800" aria-label="Copy password"><Copy size={15} /></button></dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-[12.5px] text-slate">Shown once — copy it now and give it to {user.first}. For security, existing passwords can’t be shown, so this replaces their old one. Ask them to change it after logging in.</p>
         </div>
       )}
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">

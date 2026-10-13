@@ -1,6 +1,7 @@
+import crypto from 'node:crypto'
 import { Router } from 'express'
 import { col } from '../db.js'
-import { clean, cleanText, isPhone, oid, publicUser, requireAdmin } from '../security.js'
+import { clean, cleanText, createSession, hashPassword, isPhone, oid, publicUser, requireAdmin } from '../security.js'
 import { setStatus } from './auth.js'
 import { logActivity, publicMission } from '../people.js'
 import { PUBLIC_SETTINGS } from './public.js'
@@ -62,6 +63,42 @@ admin.patch('/users/:id', async (req, res) => {
   const changed = Object.keys(LABELS).filter((k) => k in $set && $set[k] !== old(k)).map((k) => LABELS[k])
   if (changed.length) logActivity(_id, 'Profile', 'Your details were updated by HR', `Changed: ${changed.join(', ')}`)
   res.json({ user: adminUser(await col('users').findOne({ _id })) })
+})
+
+// Generate a strong temporary password for an employee. Passwords are stored only as a one-way
+// hash and cannot be read back, so this returns a fresh password ONCE for the admin to pass on.
+const genPassword = () => {
+  const U = 'ABCDEFGHJKLMNPQRSTUVWXYZ', L = 'abcdefghijkmnpqrstuvwxyz', D = '23456789', S = '!@#$%&*?'
+  const all = U + L + D + S
+  const pick = (set) => set[crypto.randomInt(set.length)]
+  const chars = [pick(U), pick(L), pick(D), pick(S)]
+  while (chars.length < 12) chars.push(pick(all))
+  for (let i = chars.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]] }
+  return chars.join('')
+}
+admin.post('/users/:id/password', async (req, res) => {
+  const _id = oid(req.params.id)
+  const user = _id && await col('users').findOne({ _id })
+  if (!user) return res.status(404).json({ error: 'User not found.' })
+  if (String(user._id) === String(req.user._id)) return res.status(400).json({ error: 'Change your own password from Profile & security.' })
+  const password = genPassword()
+  await col('users').updateOne({ _id }, { $set: { passwordHash: await hashPassword(password), passwordChangedAt: new Date() } })
+  await col('sessions').deleteMany({ userId: _id }) // sign them out everywhere so the new password takes effect
+  logActivity(_id, 'Security', 'Your password was reset by an administrator')
+  res.json({ email: user.email, password })
+})
+
+// Log in as an employee to see their portal. Swaps this browser's session for one belonging to the
+// employee, tagged with the admin who started it so "Return to admin" can restore the admin session.
+admin.post('/users/:id/impersonate', async (req, res) => {
+  const _id = oid(req.params.id)
+  const user = _id && await col('users').findOne({ _id })
+  if (!user) return res.status(404).json({ error: 'User not found.' })
+  if (String(user._id) === String(req.user._id)) return res.status(400).json({ error: 'You are already signed in as yourself.' })
+  if (user.status !== 'approved') return res.status(400).json({ error: 'You can only view active (approved) accounts.' })
+  await createSession(res, user, false, { impersonatedBy: req.user._id, adminEmail: req.user.email, meta: `Viewed by admin ${req.user.email}` })
+  logActivity(user._id, 'Security', 'An administrator signed in to view this account', req.user.email)
+  res.json({ user: publicUser(user) })
 })
 
 admin.post('/users/:id/status', async (req, res) => {

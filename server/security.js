@@ -26,10 +26,10 @@ export const DUMMY_HASH = await hashPassword(crypto.randomBytes(12).toString('he
 // ---------- Sessions (random token in an HttpOnly cookie; only its hash is stored) ----------
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex')
 
-export async function createSession(res, user, remember = false) {
+export async function createSession(res, user, remember = false, extra = {}) {
   const days = remember ? config.rememberDays : config.sessionDays
   const token = crypto.randomBytes(32).toString('base64url')
-  await col('sessions').insertOne({ tokenHash: sha256(token), userId: user._id, createdAt: new Date(), expiresAt: new Date(Date.now() + days * 864e5) })
+  await col('sessions').insertOne({ tokenHash: sha256(token), userId: user._id, createdAt: new Date(), expiresAt: new Date(Date.now() + days * 864e5), ...extra })
   res.cookie(COOKIE, token, { ...cookieOpts(), maxAge: days * 864e5 })
 }
 // In production the website and API may live on different domains, which needs SameSite=None (always with Secure).
@@ -51,7 +51,7 @@ export async function loadUser(req, _res, next) {
       const s = await col('sessions').findOne({ tokenHash: sha256(token), expiresAt: { $gt: new Date() } })
       if (s) {
         const u = await col('users').findOne({ _id: s.userId })
-        if (u && u.status === 'approved') req.user = u
+        if (u && u.status === 'approved') { req.user = u; req.session = s }
       }
     }
     next()
