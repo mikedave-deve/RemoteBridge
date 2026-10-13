@@ -36,12 +36,22 @@ const A = {
 // Warm the page chunks once the browser is idle so navigation stays instant.
 const preload = () => Promise.all([import('./pages/Jobs'), import('./pages/JobDetail'), import('./pages/SubmitResume'), import('./pages/About'), import('./pages/Team'), import('./pages/Auth')])
 
+// The canonical host is the one that serves pages directly (the apex 308-redirects here).
+// Keeping canonical/og:url on this host — and matching the sitemap — avoids "Page with redirect" in Search Console.
+const SITE_ORIGIN = 'https://www.premierremotebridge.com'
+
 function Layout() {
   const { pathname } = useLocation()
   useEffect(() => {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500))
     idle(() => preload().catch(() => {}))
   }, [])
+  // Point each page's canonical and og:url at its own URL, not always the homepage.
+  useEffect(() => {
+    const url = SITE_ORIGIN + (pathname === '/' ? '/' : pathname.replace(/\/+$/, ''))
+    document.head.querySelector('link[rel="canonical"]')?.setAttribute('href', url)
+    document.head.querySelector('meta[property="og:url"]')?.setAttribute('content', url)
+  }, [pathname])
   const bare = ['/login', '/create-account', '/forgot-password', '/reset-password'].includes(pathname)
   return (
     <SmoothScroll>
