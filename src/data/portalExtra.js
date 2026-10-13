@@ -119,7 +119,7 @@ export const equipment = {
       events: [['Aug 29', 'Shipped from Atlanta, GA'], ['Sep 2, 2:15 PM', 'Delivered to front door']] },
   ],
   stipend: { annual: 500, used: 312.48, items: [['Desk chair (reimbursed)', 249.99, 'Apr 18, 2026'], ['Monitor arm (reimbursed)', 62.49, 'May 2, 2026']] },
-  shipTo: '2241 Northwest Blvd, Columbus, OH 43221',
+  shipTo: '201 E Main St, Lexington, KY 40507',
 }
 
 // Services the company provides to employees.

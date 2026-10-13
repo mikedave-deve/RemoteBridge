@@ -5,7 +5,7 @@ export const employee = {
   title: 'Bookkeeper', department: 'Finance & Accounting',
   client: 'Westbrook & Hale CPAs', manager: 'Laura Bennett', recruiter: 'Samuel Adams',
   email: 'andre.williams@email.com', workEmail: 'a.williams@premierremotebridge.com', phone: '(614) 555-0148',
-  address: ['2241 Northwest Blvd', 'Columbus, OH 43221'],
+  address: ['201 E Main St', 'Lexington, KY 40507'],
   ssnLast4: '4821', dob: 'May 14, 1990',
   startDate: 'March 10, 2025', type: 'Full-time, non-exempt (hourly)', rate: 27, payFrequency: 'Biweekly (every other Friday)',
   workState: 'Ohio', workCity: 'Columbus', timezone: 'Eastern',

@@ -13,7 +13,7 @@ const plusDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); retu
 const fmtDay = (k) => (k ? new Date(`${k}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 const blankAddr = { name: '', company: '', street: '', street2: '', city: '', state: '', zip: '', country: 'US', phone: '' }
 
-/** "88 High St, Columbus, OH 43215" → street, city, state, ZIP. */
+/** "201 E Main St, Lexington, KY 40507" → street, city, state, ZIP. */
 function parseAddress(text = '') {
   const parts = text.split(',').map((s) => s.trim()).filter(Boolean)
   const m = (parts[parts.length - 1] || '').match(/^([A-Za-z .]+?)\s+(\d{5}(?:-\d{4})?)$/)
