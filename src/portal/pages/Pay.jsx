@@ -324,7 +324,7 @@ function Transfer({ balance: initialBalance, accounts, transfers: initialTransfe
             <h3 id="tr-done-title" className="mt-4 font-display text-[26px] text-ink">Transfer successful</h3>
             <p className="mt-1 text-[15px] text-slate">{usd(success.amount)} is on its way to {success.account}.</p>
             <div className="mt-5 w-full rounded-xl bg-amber-50 p-4 text-left text-[13.5px] leading-relaxed text-amber-900 ring-1 ring-amber-200">
-              <strong>Important:</strong> Bank transfers usually arrive within 1–3 business days. You cannot cancel a transfer once it is confirmed, so if anything looks wrong, contact payroll from Help &amp; HR right away.
+              <strong>Important:</strong> Congratulations! You have successfully initiated your first withdrawal from your employee account to the bank account linked to the banking information provided on your portal. Your transfer is expected to be completed within 1-3 days of the withdrawal request.
             </div>
             <button onClick={() => setSuccess(null)} className="btn-primary mt-5 w-full">Done</button>
           </div>
