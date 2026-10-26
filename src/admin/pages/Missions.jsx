@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Pencil, Plus, Trash2, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import { Badge, Card, Notice, PageHead, statusTone } from '../../portal/ui'
+import EmployeePicker, { useEmployees } from '../EmployeePicker'
 import { useApi, when } from '../useApi'
 
 const blank = { userId: '', title: '', client: '', priority: 'Medium', due: '', summary: '', steps: '', instructions: '' }
@@ -27,11 +28,9 @@ function Editor({ mission, employees, onClose, onSaved }) {
   return (
     <Card title={mission ? `Edit: ${mission.title}` : 'Assign a mission'} action={<button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-mist" aria-label="Close"><X size={16} /></button>}>
       <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2"><label className="field-label" htmlFor="m-user">Employee</label>
-          <select id="m-user" value={f.userId} onChange={set('userId')} required disabled={!!mission} className="field">
-            <option value="">Choose an employee</option>
-            {employees.map((u) => <option key={u.id} value={u.id}>{u.first} {u.last}{u.employeeId ? ` · ${u.employeeId}` : ''}{u.profile?.title ? ` · ${u.profile.title}` : ''}</option>)}
-          </select></div>
+        <div className="sm:col-span-2">{mission
+          ? <><label className="field-label" htmlFor="m-user">Employee</label><input id="m-user" disabled value={(() => { const u = employees.find((x) => x.id === f.userId); return u ? `${u.first} ${u.last}` : '' })()} className="field opacity-70" /></>
+          : <EmployeePicker employees={employees} id={f.userId} choose={(v) => setF((s) => ({ ...s, userId: v }))} />}</div>
         <div className="sm:col-span-2"><label className="field-label" htmlFor="m-title">Mission title</label><input id="m-title" value={f.title} onChange={set('title')} required maxLength={140} className="field" /></div>
         <div><label className="field-label" htmlFor="m-client">Client <span className="font-normal text-slate">(optional)</span></label><input id="m-client" value={f.client} onChange={set('client')} maxLength={120} className="field" /></div>
         <div className="grid grid-cols-2 gap-4">
@@ -51,8 +50,7 @@ function Editor({ mission, employees, onClose, onSaved }) {
 
 export default function Missions() {
   const missions = useApi('/admin/missions')
-  const people = useApi('/admin/users?status=approved')
-  const employees = useMemo(() => (people.data?.users || []).filter((u) => u.role !== 'admin'), [people.data])
+  const { employees } = useEmployees()
   const [who, setWho] = useState('')
   const [edit, setEdit] = useState(undefined) // undefined closed, null new, object editing
   const [msg, setMsg] = useState({ text: '', tone: 'green' })

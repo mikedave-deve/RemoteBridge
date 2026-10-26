@@ -4,7 +4,7 @@ import { api, fileUrl } from '../../lib/api'
 import { site, useSite } from '../../lib/siteData'
 import { SHIP_SERVICES, SHIP_STEPS } from '../../lib/support'
 import { Badge, Card, Notice, PageHead } from '../../portal/ui'
-import { useEmployees } from '../EmployeePicker'
+import EmployeePicker, { useEmployees } from '../EmployeePicker'
 import { useApi, when } from '../useApi'
 
 const WINDOWS = ['by 10:30 A.M.', 'by 12:00 P.M.', 'by 3:00 P.M.', 'by 7:00 P.M.', 'by End of Day']
@@ -65,11 +65,9 @@ function Editor({ shipment, employees, onClose, onSaved }) {
     <Card title={shipment ? `Edit shipment ${shipment.tracking}` : 'Create a shipping label'} action={<button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-mist" aria-label="Close"><X size={16} /></button>}>
       <form onSubmit={save} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2"><label className="field-label" htmlFor="sh-user">Employee</label>
-            <select id="sh-user" value={f.userId} onChange={(e) => pick(e.target.value)} disabled={!!shipment} required className="field">
-              <option value="">Choose an employee</option>
-              {employees.map((u) => <option key={u.id} value={u.id}>{u.first} {u.last}{u.employeeId ? ` · ${u.employeeId}` : ''}</option>)}
-            </select></div>
+          <div className="sm:col-span-2">{shipment
+            ? <><label className="field-label" htmlFor="sh-user">Employee</label><input id="sh-user" disabled value={(() => { const u = employees.find((x) => x.id === f.userId); return u ? `${u.first} ${u.last}` : '' })()} className="field opacity-70" /></>
+            : <EmployeePicker employees={employees} id={f.userId} choose={pick} />}</div>
           <div className="sm:col-span-2"><label className="field-label" htmlFor="sh-contents">Contents</label><input id="sh-contents" value={f.contents} onChange={set('contents')} maxLength={160} placeholder="e.g. Dell laptop and charger" className="field" /></div>
           <div><label className="field-label" htmlFor="sh-trk">Tracking number</label><input id="sh-trk" value={f.tracking} onChange={set('tracking')} maxLength={40} placeholder="Blank = create one" className="field uppercase placeholder:normal-case" /></div>
           <div><label className="field-label" htmlFor="sh-ref">Reference number</label><input id="sh-ref" value={f.reference} onChange={set('reference')} maxLength={40} className="field" /></div>
