@@ -37,6 +37,15 @@ admin.get('/users', async (req, res) => {
   res.json({ users: list.map(adminUser) })
 })
 
+// Slim list for the "Choose an employee" pickers: only the fields they show, so no photos,
+// bank or tax data travel with it. Sorted by name to match how admins look people up.
+const PICKER_FIELDS = { first: 1, last: 1, email: 1, phone: 1, employeeId: 1, 'profile.title': 1, 'profile.address': 1, 'profile.employmentType': 1 }
+admin.get('/employees', async (_req, res) => {
+  const list = await col('users').find({ status: 'approved', role: { $ne: 'admin' } }, { projection: PICKER_FIELDS }).sort({ first: 1, last: 1 }).limit(2000).toArray()
+  res.set('Cache-Control', 'private, no-cache')
+  res.json({ employees: list.map((u) => ({ id: String(u._id), first: u.first, last: u.last, email: u.email, phone: u.phone || '', employeeId: u.employeeId || null, profile: u.profile || {} })) })
+})
+
 const PROFILE = ['title', 'client', 'department', 'manager', 'employmentType', 'payRate', 'payFrequency', 'startDate', 'workCity', 'workState', 'address', 'notes']
 admin.patch('/users/:id', async (req, res) => {
   const _id = oid(req.params.id)

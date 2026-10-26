@@ -61,7 +61,7 @@ async function payBalance(user, stubs) {
   const sent = r2(transfers.reduce((s, x) => s + (x.amount || 0), 0))
   return { earned, sent, available: r2(Math.max(0, earned - sent)) }
 }
-const publicTransfer = (t) => ({ id: String(t._id), reference: t.reference, amount: t.amount, accountLabel: t.accountLabel, status: t.status, createdAt: t.createdAt })
+const publicTransfer = (t) => ({ id: String(t._id), reference: t.reference, amount: t.amount, accountLabel: t.accountLabel, status: t.status, createdAt: t.createdAt, reversedAt: t.reversedAt || null, reverseReason: t.reverseReason || '' })
 const maskEmail = (e) => { const [n, d] = String(e).split('@'); return n.length <= 2 ? `${n}•••@${d}` : `${n.slice(0, 2)}${'•'.repeat(Math.min(6, Math.max(1, n.length - 2)))}@${d}` }
 const transferCode = () => String(crypto.randomInt(0, 1e6)).padStart(6, '0')
 const hashCode = (code) => crypto.createHash('sha256').update(`transfer:${code}`).digest('base64url')
@@ -110,6 +110,17 @@ meWork.post('/pay/transfer/confirm', formLimit(12, 15), async (req, res) => {
   res.json({ transfer: publicTransfer({ ...doc, _id: insertedId }), balance: await payBalance(req.user) })
 })
 
+// Step 3: the portal calls this once the "Transfer successful" popup is on screen, so the
+// receipt email always follows the popup. The receiptSentAt claim makes it send only once.
+meWork.post('/pay/transfer/:id/receipt', async (req, res) => {
+  const _id = oid(req.params.id)
+  const t = _id && await col('payTransfers').findOneAndUpdate({ _id, userId: req.user._id, status: 'completed', receiptSentAt: { $exists: false } }, { $set: { receiptSentAt: new Date() } })
+  if (!t) return res.json({ ok: true })
+  try { await send({ to: req.user.email, ...templates.transferSuccess(req.user, { amount: usd(t.amount), account: t.accountLabel, reference: t.reference, date: t.createdAt }) }) }
+  catch (e) { console.error('[mail]', e.message); await col('payTransfers').updateOne({ _id }, { $unset: { receiptSentAt: '' } }) }
+  res.json({ ok: true })
+})
+
 meWork.get('/pay/:id/pdf', async (req, res) => {
   const _id = oid(req.params.id)
   const stub = _id && await col('payStubs').findOne({ _id, userId: req.user._id })
@@ -152,12 +163,38 @@ meWork.delete('/pay/accounts/:id', async (req, res) => {
 adminWork.get('/pay', async (req, res) => {
   const user = await userById(req.query.userId)
   if (!user) return res.status(404).json({ error: 'Employee not found.' })
-  const stubs = await col('payStubs').find({ userId: user._id }).sort({ payDate: -1, createdAt: -1 }).toArray()
+  const [stubs, transfers] = await Promise.all([
+    col('payStubs').find({ userId: user._id }).sort({ payDate: -1, createdAt: -1 }).toArray(),
+    col('payTransfers').find({ userId: user._id }).sort({ createdAt: -1 }).limit(50).toArray(),
+  ])
   res.json({
     stubs: stubs.map((s) => ({ ...publicStub(s), input: s.input })),
     accounts: (user.bank || []).map((a) => ({ ...publicAccount(a), routing: unseal(a.routing), account: unseal(a.account) })),
     pay: payInfo(user), benefits: benefitsOf(user), w4: user.tax?.w4 || null,
+    transfers: transfers.map(publicTransfer),
   })
+})
+
+// Cancel a completed transfer: the amount goes back into the employee's available balance.
+adminWork.post('/pay/transfers/:id/reverse', async (req, res) => {
+  const _id = oid(req.params.id)
+  const reason = cleanText(req.body?.reason, 500)
+  const t = _id && await col('payTransfers').findOneAndUpdate({ _id, status: 'completed' },
+    { $set: { status: 'reversed', reversedAt: new Date(), reversedBy: req.user.email, reverseReason: reason } }, { returnDocument: 'after' })
+  if (!t) return res.status(404).json({ error: 'Transfer not found, or it was already reversed.' })
+  logActivity(t.userId, 'Pay', 'A transfer to your bank was reversed', `${usd(t.amount)} → ${t.accountLabel} · returned to your balance${reason ? ` · ${reason}` : ''}`)
+  res.json({ transfer: publicTransfer(t) })
+})
+
+// Add or change the reason the employee sees on a reversed transfer.
+adminWork.patch('/pay/transfers/:id/reason', async (req, res) => {
+  const _id = oid(req.params.id)
+  const reason = cleanText(req.body?.reason, 500)
+  if (!reason) return res.status(400).json({ error: 'Enter the reason this transfer was reversed.' })
+  const t = _id && await col('payTransfers').findOneAndUpdate({ _id, status: 'reversed' }, { $set: { reverseReason: reason } }, { returnDocument: 'after' })
+  if (!t) return res.status(404).json({ error: 'Reversed transfer not found.' })
+  logActivity(t.userId, 'Pay', 'Reason given for a reversed transfer', `${t.reference} · ${reason}`)
+  res.json({ transfer: publicTransfer(t) })
 })
 
 adminWork.post('/pay/preview', async (req, res) => {

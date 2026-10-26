@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download, Landmark, Lock, Plus, Send, Wallet, X } from 'lucide-react'
 import { employee, usd } from '../../data/portal'
 import { api, fileUrl } from '../../lib/api'
@@ -234,7 +234,13 @@ function Transfer({ balance: initialBalance, accounts, transfers: initialTransfe
   const [busy, setBusy] = useState(false)
   const [code, setCode] = useState('')
   const [pending, setPending] = useState(null) // { token, amount, account, sentTo }
-  const [success, setSuccess] = useState(null) // { amount, account }
+  const [success, setSuccess] = useState(null) // { id, amount, account }
+  const reversed = transfers.filter((t) => t.status === 'reversed')
+
+  // The receipt email goes out only once the "Transfer successful" popup is showing.
+  useEffect(() => {
+    if (success) api(`/me/pay/transfer/${success.id}/receipt`, { method: 'POST' }).catch(() => {})
+  }, [success])
 
   const start = async (e) => {
     e?.preventDefault()
@@ -256,7 +262,7 @@ function Transfer({ balance: initialBalance, accounts, transfers: initialTransfe
     try {
       const r = await api('/me/pay/transfer/confirm', { method: 'POST', body: { token: pending.token, code } })
       setBalance(r.balance); setTransfers((t) => [r.transfer, ...t])
-      setSuccess({ amount: r.transfer.amount, account: r.transfer.accountLabel })
+      setSuccess({ id: r.transfer.id, amount: r.transfer.amount, account: r.transfer.accountLabel })
       setPending(null); setAmount(''); setCode('')
       playChime()
     } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
@@ -293,10 +299,25 @@ function Transfer({ balance: initialBalance, accounts, transfers: initialTransfe
         )}
       </Card>
 
+      {reversed.length > 0 && (
+        <Card title="Reversed transfers">
+          <ul className="space-y-3">
+            {reversed.map((t) => (
+              <li key={t.id} className="rounded-xl bg-red-50 p-4 text-[14px] ring-1 ring-red-200">
+                <p className="font-medium text-red-900">{usd(t.amount)} to {t.accountLabel} was reversed{t.reversedAt ? ` on ${fmtWhen(t.reversedAt)}` : ''}</p>
+                <p className="mt-1 text-red-900/80">{t.reverseReason ? <><span className="font-medium">Reason:</span> {t.reverseReason}</> : 'Payroll has not added a reason yet.'}</p>
+                <p className="mt-1 text-[13px] text-red-900/70">{t.reference} · The amount was returned to your available balance.</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {transfers.length > 0 && (
         <Card title="Transfer history" pad={false}>
           <Table head={['Reference', 'To account', 'Date', 'Amount', 'Status']} align={['', '', '', 'r', '']}
-            rows={transfers.map((t) => [<span key="r" className="text-slate">{t.reference}</span>, t.accountLabel, fmtWhen(t.createdAt), usd(t.amount), <Badge key="s" tone="green">{t.status === 'completed' ? 'Completed' : t.status}</Badge>])} />
+            rows={transfers.map((t) => [<span key="r" className="text-slate">{t.reference}</span>, t.accountLabel, fmtWhen(t.createdAt), usd(t.amount),
+              t.status === 'reversed' ? <Badge key="s" tone="red">Reversed</Badge> : <Badge key="s" tone="green">{t.status === 'completed' ? 'Completed' : t.status}</Badge>])} />
         </Card>
       )}
 

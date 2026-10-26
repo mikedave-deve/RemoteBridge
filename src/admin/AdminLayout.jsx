@@ -4,6 +4,7 @@ import { BadgeCheck, Bell, CalendarDays, FolderOpen,ClipboardList, Clock, Truck,
 import Logo from '../components/Logo'
 import { api } from '../lib/api'
 import { signOut, useSession } from '../portal/session'
+import { clearEmployees, loadEmployees } from './EmployeePicker'
 
 const nav = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -102,12 +103,15 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [drawer, setDrawer] = useState(false)
   useEffect(() => { setDrawer(false); window.scrollTo(0, 0) }, [pathname])
+  // Start loading the employee list as soon as the admin portal opens, before any picker needs it.
+  const isAdmin = session.user?.role === 'admin'
+  useEffect(() => { if (isAdmin) loadEmployees().catch(() => {}) }, [isAdmin])
 
   if (session.loading) return <div className="grid min-h-screen place-items-center bg-paper"><span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-bridge-600" aria-label="Loading" /></div>
   if (!session.user) return <Navigate to="/login" replace state={{ next: pathname }} />
   if (session.user.role !== 'admin') return <Navigate to="/portal" replace />
 
-  const out = async () => { await signOut(); navigate('/', { replace: true }) }
+  const out = async () => { await signOut(); clearEmployees(); navigate('/', { replace: true }) }
 
   return (
     <div className="min-h-screen bg-paper">

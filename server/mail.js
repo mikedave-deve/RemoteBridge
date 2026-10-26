@@ -86,6 +86,8 @@ const button = (href, label, dark = true) => `<a href="${esc(href)}" style="disp
 const rows = (pairs) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;border:1px solid #D7E2E3;border-radius:12px;border-collapse:separate;">${pairs.filter(([, v]) => v).map(([k, v], i) => `<tr><td style="padding:11px 16px;${i ? 'border-top:1px solid #D7E2E3;' : ''}font-family:${SANS};font-size:13.5px;color:#6B8086;width:38%;vertical-align:top;">${esc(k)}</td><td style="padding:11px 16px;${i ? 'border-top:1px solid #D7E2E3;' : ''}font-family:${SANS};font-size:14.5px;color:#14282E;">${esc(v).replace(/\n/g, '<br>')}</td></tr>`).join('')}</table>`
 const codeBox = (code) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;"><tr><td align="center" style="padding:22px;border:1px solid #D7E2E3;border-radius:14px;background:#F4F8F8;"><div style="font-family:${SANS};font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6B8086;margin-bottom:10px;">Your confirmation code</div><div style="font-family:${SANS};font-size:38px;font-weight:700;letter-spacing:0.3em;color:#06242B;">${esc(code)}</div></td></tr></table>`
 
+const amountBox = (amount) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px;"><tr><td align="center" style="padding:22px;border:1px solid #D7E2E3;border-radius:14px;background:#F4F8F8;"><div style="font-family:${SANS};font-size:28px;line-height:1;color:#1F7A8C;margin-bottom:8px;">&#10003;</div><div style="font-family:${SANS};font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6B8086;margin-bottom:8px;">Amount sent</div><div style="font-family:${SERIF};font-size:40px;color:#06242B;">${esc(amount)}</div></td></tr></table>`
+
 export const templates = {
   adminResume: (s) => ({
     subject: `New résumé: ${s.first} ${s.last} (${s.field})`,
@@ -128,6 +130,16 @@ export const templates = {
       + codeBox(d.code)
       + rows([['Amount', d.amount], ['To account', d.account]])
       + p('<span style="font-size:13px;">This code expires in 15 minutes and can be used once. If you did not request this transfer, do not share this code — no one from PremierRemoteBridge will ever ask you for it.</span>') }),
+  }),
+  transferSuccess: (u, d) => ({
+    subject: `Transfer successful: ${d.amount} sent to your bank`,
+    html: layout({ preheader: `${d.amount} is on its way to ${d.account}.`, title: 'Transfer successful', body:
+      p(`Hi ${esc(u.first)}, your transfer was successful. <strong style="color:#14282E;">${esc(d.amount)}</strong> is on its way to ${esc(d.account)}.`)
+      + amountBox(d.amount)
+      + rows([['Amount', d.amount], ['To account', d.account], ['Reference', d.reference], ['Date', new Date(d.date).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) + ' ET']])
+      + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;"><tr><td style="padding:16px;border:1px solid #FDE68A;border-radius:12px;background:#FFFBEB;font-family:${SANS};font-size:14px;line-height:1.6;color:#78350F;"><strong>Important:</strong> Congratulations! You have successfully initiated your first withdrawal from your employee account to the bank account linked to the banking information provided on your portal. Your transfer is expected to be completed within 1-3 days of the withdrawal request.</td></tr></table>`
+      + button(`${config.siteUrl}/portal/pay`, 'View transfer history')
+      + p('<span style="font-size:13px;">If you did not make this transfer, contact HR right away from Help &amp; HR in your portal.</span>') }),
   }),
   userApproved: (u) => ({
     subject: 'Your PremierRemoteBridge account is approved',

@@ -28,6 +28,7 @@ function createIndexes() {
     db.collection('activity').createIndex({ userId: 1, at: -1 }),
     db.collection('missions').createIndex({ userId: 1, createdAt: -1 }),
     db.collection('payStubs').createIndex({ userId: 1, payDate: -1 }),
+    db.collection('payTransfers').createIndex({ userId: 1, createdAt: -1 }),
     db.collection('taxForms').createIndex({ userId: 1, year: -1 }),
     db.collection('punches').createIndex({ userId: 1, at: -1 }),
     db.collection('punches').createIndex({ at: -1 }),

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2, Undo2, X } from 'lucide-react'
 import { api, fileUrl } from '../../lib/api'
 import { Badge, Card, Notice, PageHead } from '../../portal/ui'
 import EmployeePicker, { useEmployees } from '../EmployeePicker'
@@ -157,6 +157,61 @@ function Accounts({ user, accounts, onChange }) {
   )
 }
 
+function Transfers({ transfers, onChange }) {
+  const [msg, setMsg] = useState({ text: '', tone: 'green' })
+  const [editing, setEditing] = useState(null) // transfer id whose reason is being written
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const reverse = async (t) => {
+    if (!window.confirm(`Cancel and reverse transfer ${t.reference} (${usd(t.amount)} to ${t.accountLabel})? The amount goes back to the employee’s available balance.`)) return
+    setBusy(true)
+    try {
+      await api(`/admin/pay/transfers/${t.id}/reverse`, { method: 'POST' })
+      setMsg({ text: `Transfer ${t.reference} reversed. Add the reason below so the employee can see why.`, tone: 'green' })
+      setEditing(t.id); setReason(''); onChange()
+    } catch (e) { setMsg({ text: e.message, tone: 'red' }) } finally { setBusy(false) }
+  }
+  const saveReason = async (e, t) => {
+    e.preventDefault(); setBusy(true)
+    try {
+      await api(`/admin/pay/transfers/${t.id}/reason`, { method: 'PATCH', body: { reason } })
+      setMsg({ text: `Reason saved. The employee sees it on their Pay page.`, tone: 'green' })
+      setEditing(null); onChange()
+    } catch (ex) { setMsg({ text: ex.message, tone: 'red' }) } finally { setBusy(false) }
+  }
+
+  return (
+    <Card title="Transfers to bank" pad={false}>
+      {msg.text && <div className="px-6 pt-4"><Notice tone={msg.tone}>{msg.text}</Notice></div>}
+      <ul className="divide-y divide-line">
+        {transfers.map((t) => (
+          <li key={t.id} className="px-6 py-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1 text-[14.5px]">
+                <p className="font-medium">{usd(t.amount)} → {t.accountLabel} <span className="font-normal text-slate">· {t.reference}</span></p>
+                <p className="text-slate">Sent {when(t.createdAt)}{t.reversedAt ? ` · reversed ${when(t.reversedAt)}` : ''}</p>
+              </div>
+              <Badge tone={t.status === 'reversed' ? 'red' : 'green'}>{t.status === 'reversed' ? 'Reversed' : 'Completed'}</Badge>
+              {t.status === 'completed' && <button onClick={() => reverse(t)} disabled={busy} className="btn-ghost h-9 px-3 text-[14px] text-red-700 disabled:opacity-60"><Undo2 size={15} /> Cancel &amp; reverse</button>}
+              {t.status === 'reversed' && editing !== t.id && <button onClick={() => { setEditing(t.id); setReason(t.reverseReason) }} className="btn-ghost h-9 px-3 text-[14px]"><Pencil size={15} /> {t.reverseReason ? 'Edit reason' : 'Add reason'}</button>}
+            </div>
+            {t.status === 'reversed' && editing !== t.id && <p className="mt-2 text-[13.5px] text-slate">{t.reverseReason ? <>Reason: <span className="text-ink">{t.reverseReason}</span></> : 'No reason added yet. The employee sees “Payroll has not added a reason yet.”'}</p>}
+            {editing === t.id && (
+              <form onSubmit={(e) => saveReason(e, t)} className="mt-3 space-y-2">
+                <label className="field-label" htmlFor={`rv-${t.id}`}>Why was this transfer reversed? <span className="font-normal text-slate">(the employee sees this)</span></label>
+                <textarea id={`rv-${t.id}`} autoFocus value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={3} required className="field h-auto py-2.5" />
+                <div className="flex gap-3"><button disabled={busy || !reason.trim()} className="btn-dark h-10 disabled:opacity-60">Save reason</button><button type="button" onClick={() => setEditing(null)} className="btn-ghost h-10">Cancel</button></div>
+              </form>
+            )}
+          </li>
+        ))}
+        {!transfers.length && <li className="px-6 py-6 text-slate">No transfers yet. They appear here when the employee moves available pay to their bank.</li>}
+      </ul>
+    </Card>
+  )
+}
+
 export default function Pay() {
   const { employees, id, chosen, choose } = useEmployees()
   const data = useApi(id ? `/admin/pay?userId=${id}` : null)
@@ -200,6 +255,7 @@ export default function Pay() {
           </ul>
         </Card>
         <Accounts user={chosen} accounts={d.accounts} onChange={data.reload} />
+        <Transfers key={id} transfers={d.transfers || []} onChange={data.reload} />
       </>}
       {!id && <p className="rounded-2xl bg-white p-8 text-center text-slate ring-1 ring-line">Choose an employee to see and post their pay stubs.</p>}
       {id && !d && !data.error && <p className="rounded-2xl bg-white p-8 text-center text-slate ring-1 ring-line">Loading…</p>}
